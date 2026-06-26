@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Test – Sternik Motorowodny</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --navy: #0a2342;
+    --ocean: #1a5276;
+    --sky: #2e86c1;
+    --foam: #d6eaf8;
+    --sand: #fdf6e3;
+    --coral: #e74c3c;
+    --green: #27ae60;
+    --yellow: #f39c12;
+    --text: #1c2833;
+    --muted: #5d6d7e;
+    --radius: 10px;
+    --shadow: 0 4px 20px rgba(10,35,66,0.12);
+  }
+
+  body {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    background: var(--navy);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 0 0 60px;
+  }
+
+  /* HEADER */
+  header {
+    width: 100%;
+    background: linear-gradient(135deg, var(--navy) 0%, var(--ocean) 100%);
+    color: white;
+    text-align: center;
+    padding: 36px 20px 28px;
+    position: relative;
+    overflow: hidden;
+  }
+  header::before {
+    content: '';
+    position: absolute;
+    bottom: -2px; left: 0; right: 0;
+    height: 40px;
+    background: var(--sand);
+    clip-path: ellipse(55% 100% at 50% 100%);
+  }
+  header h1 { font-size: clamp(1.4rem, 4vw, 2rem); font-weight: 700; letter-spacing: 0.03em; }
+  header p { margin-top: 6px; font-size: 0.95rem; opacity: 0.8; }
+  .anchor-icon { font-size: 2.4rem; margin-bottom: 10px; display: block; }
+
+  /* MAIN WRAPPER */
+  .container {
+    width: 100%;
+    max-width: 820px;
+    padding: 0 16px;
+    margin-top: 36px;
+  }
+
+  /* SCREENS */
+  .screen { display: none; }
+  .screen.active { display: block; }
+
+  /* SETUP SCREEN */
+  .setup-card {
+    background: white;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 32px;
+  }
+  .setup-card h2 { font-size: 1.2rem; color: var(--ocean); margin-bottom: 20px; }
+  .section-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 10px;
+    margin-bottom: 24px;
+  }
+  .section-checkbox {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    background: var(--foam);
+    border: 2px solid transparent;
+    border-radius: 8px;
+    padding: 12px;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+    user-select: none;
+  }
+  .section-checkbox:hover { border-color: var(--sky); }
+  .section-checkbox input { margin-top: 3px; accent-color: var(--ocean); width: 16px; height: 16px; flex-shrink: 0; }
+  .section-checkbox span { font-size: 0.88rem; font-weight: 500; color: var(--text); }
+  .section-count { font-size: 0.75rem; color: var(--muted); display: block; margin-top: 2px; }
+
+  .options-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-bottom: 28px;
+    align-items: flex-end;
+  }
+  .option-group { display: flex; flex-direction: column; gap: 6px; }
+  .option-group label { font-size: 0.85rem; font-weight: 600; color: var(--muted); }
+  .option-group select, .option-group input[type=number] {
+    border: 2px solid #dde; border-radius: 8px;
+    padding: 8px 12px; font-size: 0.95rem; color: var(--text);
+    background: white; outline: none;
+    transition: border-color 0.2s;
+  }
+  .option-group select:focus, .option-group input:focus { border-color: var(--sky); }
+  input[type=number] { width: 100px; }
+
+  .btn-start {
+    display: block; width: 100%;
+    background: linear-gradient(135deg, var(--ocean), var(--sky));
+    color: white; border: none; border-radius: 10px;
+    padding: 16px; font-size: 1.05rem; font-weight: 700;
+    cursor: pointer; transition: opacity 0.2s, transform 0.1s;
+    letter-spacing: 0.03em;
+  }
+  .btn-start:hover { opacity: 0.92; }
+  .btn-start:active { transform: scale(0.99); }
+
+  /* QUIZ SCREEN */
+  .quiz-header {
+    background: white;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 18px 24px;
+    margin-bottom: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .quiz-meta { font-size: 0.88rem; color: var(--muted); }
+  .quiz-meta strong { color: var(--text); }
+  .quiz-progress { display: flex; align-items: center; gap: 10px; }
+  .progress-bar {
+    width: 160px; height: 8px;
+    background: #eee; border-radius: 99px; overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%; background: linear-gradient(90deg, var(--ocean), var(--sky));
+    border-radius: 99px; transition: width 0.3s;
+  }
+  .score-badge {
+    background: var(--foam); border-radius: 99px;
+    padding: 4px 14px; font-size: 0.82rem; font-weight: 600; color: var(--ocean);
+  }
+
+  .question-card {
+    background: white;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 28px 28px 24px;
+    margin-bottom: 18px;
+  }
+  .question-section {
+    font-size: 0.75rem; font-weight: 700; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--sky);
+    margin-bottom: 10px;
+  }
+  .question-text {
+    font-size: 1.05rem; font-weight: 600; line-height: 1.5;
+    color: var(--navy); margin-bottom: 20px;
+  }
+  .question-num { color: var(--muted); font-weight: 400; margin-right: 6px; }
+
+  .answers { display: flex; flex-direction: column; gap: 10px; }
+  .answer-btn {
+    display: flex; align-items: center; gap: 14px;
+    background: #f7f9fb; border: 2px solid #e0e8f0;
+    border-radius: 8px; padding: 13px 16px;
+    cursor: pointer; text-align: left;
+    font-size: 0.95rem; color: var(--text); font-family: inherit;
+    transition: border-color 0.15s, background 0.15s;
+    width: 100%;
+  }
+  .answer-btn:not(.disabled):hover { border-color: var(--sky); background: var(--foam); }
+  .answer-btn .letter {
+    width: 28px; height: 28px; border-radius: 50%;
+    background: white; border: 2px solid #c5d5e0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.8rem; font-weight: 700; flex-shrink: 0;
+    color: var(--muted); transition: all 0.15s;
+  }
+  .answer-btn.correct { border-color: var(--green); background: #eafaf1; }
+  .answer-btn.correct .letter { background: var(--green); border-color: var(--green); color: white; }
+  .answer-btn.wrong { border-color: var(--coral); background: #fdedec; }
+  .answer-btn.wrong .letter { background: var(--coral); border-color: var(--coral); color: white; }
+  .answer-btn.disabled { cursor: default; }
+
+  .feedback-bar {
+    margin-top: 16px; padding: 12px 16px;
+    border-radius: 8px; font-size: 0.9rem; font-weight: 600;
+    display: none;
+  }
+  .feedback-bar.correct { background: #eafaf1; color: #1d8348; border: 1.5px solid #a9dfbf; }
+  .feedback-bar.wrong { background: #fdedec; color: #922b21; border: 1.5px solid #f5b7b1; }
+
+  .quiz-actions {
+    display: flex; justify-content: flex-end;
+    gap: 10px;
+  }
+  .btn-next, .btn-quit {
+    border: none; border-radius: 8px;
+    padding: 12px 26px; font-size: 0.95rem; font-weight: 700;
+    cursor: pointer; transition: opacity 0.2s;
+  }
+  .btn-next {
+    background: linear-gradient(135deg, var(--ocean), var(--sky));
+    color: white;
+  }
+  .btn-quit {
+    background: #ecf0f1; color: var(--muted);
+  }
+  .btn-next:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* RESULTS SCREEN */
+  .results-card {
+    background: white; border-radius: var(--radius);
+    box-shadow: var(--shadow); padding: 36px 32px;
+    text-align: center;
+  }
+  .result-emoji { font-size: 3.5rem; margin-bottom: 16px; }
+  .results-card h2 { font-size: 1.5rem; color: var(--navy); margin-bottom: 8px; }
+  .result-score-big {
+    font-size: 3rem; font-weight: 800; margin: 16px 0;
+    color: var(--ocean);
+  }
+  .result-breakdown {
+    display: flex; justify-content: center; gap: 24px;
+    margin: 20px 0 28px; flex-wrap: wrap;
+  }
+  .rb-item { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+  .rb-val { font-size: 1.5rem; font-weight: 700; }
+  .rb-lbl { font-size: 0.78rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
+  .rb-correct { color: var(--green); }
+  .rb-wrong { color: var(--coral); }
+
+  .section-results {
+    margin: 20px 0; text-align: left;
+  }
+  .section-result-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 0; border-bottom: 1px solid #eee;
+  }
+  .sr-name { flex: 1; font-size: 0.9rem; }
+  .sr-bar-wrap { width: 120px; height: 8px; background: #eee; border-radius: 99px; overflow: hidden; }
+  .sr-bar { height: 100%; border-radius: 99px; }
+  .sr-pct { font-size: 0.85rem; font-weight: 700; min-width: 38px; text-align: right; }
+
+  .wrong-review {
+    margin-top: 28px; text-align: left;
+  }
+  .wrong-review h3 { font-size: 1rem; color: var(--navy); margin-bottom: 14px; }
+  .review-item {
+    background: #fff8f8; border: 1.5px solid #fadbd8;
+    border-radius: 8px; padding: 14px; margin-bottom: 10px;
+  }
+  .review-q { font-size: 0.9rem; font-weight: 600; color: var(--text); margin-bottom: 8px; }
+  .review-your { font-size: 0.85rem; color: var(--coral); margin-bottom: 4px; }
+  .review-correct { font-size: 0.85rem; color: var(--green); }
+
+  .result-btns { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-top: 28px; }
+  .btn-retry { 
+    background: linear-gradient(135deg, var(--ocean), var(--sky));
+    color: white; border: none; border-radius: 8px;
+    padding: 13px 30px; font-size: 1rem; font-weight: 700; cursor: pointer;
+  }
+  .btn-back {
+    background: #ecf0f1; color: var(--muted);
+    border: none; border-radius: 8px;
+    padding: 13px 30px; font-size: 1rem; font-weight: 700; cursor: pointer;
+  }
+
+  @media (max-width: 500px) {
+    .setup-card, .question-card, .results-card { padding: 18px; }
+    .quiz-header { flex-direction: column; align-items: flex-start; }
+    .progress-bar { width: 120px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <span class="anchor-icon">⚓</span>
+  <h1>Sternik Motorowodny</h1>
+  <p>Baza pytań egzaminacyjnych – 558 pytań</p>
+</header>
+
+<div class="container">
+
+  <!-- SETUP SCREEN -->
+  <div class="screen active" id="screen-setup">
+    <div class="setup-card">
+      <h2>🎯 Skonfiguruj test</h2>
+      <div class="section-grid" id="section-grid"></div>
+
+      <div class="options-row">
+        <div class="option-group">
+          <label>Liczba pytań</label>
+          <input type="number" id="num-questions" value="20" min="5" max="558">
+        </div>
+        <div class="option-group">
+          <label>Kolejność</label>
+          <select id="order">
+            <option value="random">Losowa</option>
+            <option value="sequential">Po kolei</option>
+          </select>
+        </div>
+        <div class="option-group">
+          <label>Tryb</label>
+          <select id="mode">
+            <option value="feedback">Z natychmiastową informacją</option>
+            <option value="exam">Egzaminacyjny (wyniki na końcu)</option>
+          </select>
+        </div>
+      </div>
+
+      <button class="btn-start" onclick="startQuiz()">🚀 Rozpocznij test</button>
+    </div>
+  </div>
+
+  <!-- QUIZ SCREEN -->
+  <div class="screen" id="screen-quiz">
+    <div class="quiz-header">
+      <div class="quiz-meta">
+        Pytanie <strong id="q-num">1</strong> z <strong id="q-total">20</strong>
+      </div>
+      <div class="quiz-progress">
+        <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+        <span class="score-badge" id="score-badge">0 / 0</span>
+      </div>
+      <button class="btn-quit" onclick="confirmQuit()">✕ Zakończ</button>
+    </div>
+
+    <div class="question-card">
+      <div class="question-section" id="q-section"></div>
+      <div class="question-text" id="q-text"></div>
+      <div class="answers" id="answers"></div>
+      <div class="feedback-bar" id="feedback-bar"></div>
+    </div>
+
+    <div class="quiz-actions">
+      <button class="btn-next" id="btn-next" disabled onclick="nextQuestion()">Następne →</button>
+    </div>
+  </div>
+
+  <!-- RESULTS SCREEN -->
+  <div class="screen" id="screen-results">
+    <div class="results-card">
+      <div class="result-emoji" id="result-emoji"></div>
+      <h2 id="result-headline"></h2>
+      <div class="result-score-big" id="result-score-big"></div>
+      <div class="result-breakdown">
+        <div class="rb-item">
+          <span class="rb-val rb-correct" id="rb-correct"></span>
+          <span class="rb-lbl">Poprawne</span>
+        </div>
+        <div class="rb-item">
+          <span class="rb-val rb-wrong" id="rb-wrong"></span>
+          <span class="rb-lbl">Błędne</span>
+        </div>
+        <div class="rb-item">
+          <span class="rb-val" id="rb-total" style="color:var(--ocean)"></span>
+          <span class="rb-lbl">Łącznie</span>
+        </div>
+      </div>
+
+      <div class="section-results" id="section-results"></div>
+      <div class="wrong-review" id="wrong-review"></div>
+
+      <div class="result-btns">
+        <button class="btn-back" onclick="goSetup()">← Nowy test</button>
+        <button class="btn-retry" onclick="retryQuiz()">🔄 Powtórz błędne</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const DATA = {"Przepisy śródlądowe i morskie":[{"q":"Jakie przepisy regulują ruch na śródlądowych drogach wodnych?","a":["Rozporządzenie Ministra Sportu i Turystyki z 2019 roku","Ustawa o żegludze śródlądowej z dnia 21 grudnia 2000 r.","Międzynarodowe prawo drogi (COLREGS)"],"c":1},{"q":"Do jakiej długości statek zaliczany jest do małych jednostek?","a":["Do 7,5 m","Do 12 m","Do 20 m"],"c":2},{"q":"Kto jest odpowiedzialny za przestrzeganie przepisów żeglugowych na statku?","a":["Armator jednostki","Kierownik statku (sternik)","Najstarszy członek załogi"],"c":1},{"q":"Kiedy statek nie jest uważany za będący w ruchu?","a":["Gdy stoi na kotwicy, jest przycumowany do brzegu lub osiadł na mieliźnie","Gdy płynie z małą prędkością","Gdy płynie tylko na wiosłach"],"c":0},{"q":"Jak należy zachować się po zderzeniu jednostek?","a":["Odpłynąć na bezpieczną odległość i kontynuować rejs","Udzielić pomocy, zanotować dane i powiadomić Policję Wodną","Oczekiwać na miejscu bez żadnych działań"],"c":1},{"q":"Kiedy można odstąpić od przepisów żeglugowych?","a":["Nigdy","Gdy grozi bezpośrednie niebezpieczeństwo","Gdy sternik uzna, że przepisy są nieaktualne"],"c":1},{"q":"Kto sprawuje nadzór nad przestrzeganiem przepisów żeglugowych?","a":["Straż Pożarna","Policja Wodna i administracja dróg wodnych","Kapitanat portu morskiego"],"c":1},{"q":"Jakie są podstawowe reguły zachowania się na śródlądowych drogach wodnych?","a":["Pływać z maksymalną prędkością","Przestrzegać zasad bezpiecznego prowadzenia statku i unikać zderzeń","Ustępować wszystkim jednostkom żaglowym"],"c":1},{"q":"Co oznacza określenie „statek o napędzie mechanicznym”?","a":["Każdy statek z żaglami","Każdy statek wprowadzany w ruch przez maszynę","Tylko statek z silnikiem stacjonarnym"],"c":1},{"q":"Co oznacza określenie „statek żaglowy”?","a":["Statek poruszający się wyłącznie za pomocą żagli","Statek płynący na żaglach i silniku","Statek poruszający się wiatrem i prądem"],"c":0},{"q":"Kiedy statek żaglowy uważa się za statek o napędzie mechanicznym?","a":["Zawsze","Gdy płynie na żaglach i jednocześnie na silniku","Gdy ma silnik na pokładzie, ale go nie używa"],"c":1},{"q":"Kiedy kierownik statku nie może prowadzić jednostki?","a":["Po zachodzie słońca","Pod wpływem alkoholu lub środków odurzających","Gdy na pokładzie są pasażerowie"],"c":1},{"q":"Co należy zrobić, gdy w pobliżu zdarzy się wypadek na wodzie?","a":["Zgłosić to po powrocie do portu","Natychmiast udzielić pomocy, o ile nie zagraża to bezpieczeństwu załogi","Odpłynąć i wezwać pomoc przez radio"],"c":1},{"q":"Jakie uprawnienia daje patent sternika motorowodnego?","a":["Prowadzenie jachtów motorowych o dowolnej długości na morzu","Do prowadzenia jachtów motorowych po wodach śródlądowych bez ograniczeń. Na wodach morskich pozwala na prowadzenie jednostek o długości kadłuba do 12 metrów, ale tylko w porze dziennej i w strefie do 2 mil od brzegu","Prowadzenie jachtów wyłącznie na jeziorach"],"c":1},{"q":"Kiedy jednostka ma pierwszeństwo na kursach kolizyjnych?","a":["Gdy ma drugą jednostkę po swojej lewej burcie","Gdy płynie szybciej","Gdy jest mniejsza"],"c":0},{"q":"Dwie łodzie motorowe płyną na kursach kolizyjnych – jak powinny postąpić?","a":["Obie jednostki powinny skręcić w prawo","Obie powinny skręcić w lewo","Jedna powinna się zatrzymać"],"c":0},{"q":"Który statek ma pierwszeństwo w wąskim przejściu?","a":["Jednostka mniejsza","Jednostka płynąca z nurtem","Jednostka z prawej burty"],"c":1},{"q":"Który jacht ma pierwszeństwo przy wyprzedzaniu?","a":["Jacht wyprzedzany","Jacht wyprzedzający","Jacht żaglowy"],"c":0},{"q":"Kto ma pierwszeństwo przy spotkaniu jachtu motorowego i żaglowego?","a":["Motorówka","Jacht żaglowy","Większa jednostka"],"c":1},{"q":"Co oznacza jeden długi sygnał dźwiękowy?","a":["Uwaga","Zmieniam kurs w prawo","Nie mogę manewrować"],"c":0},{"q":"Co oznacza jeden krótki sygnał dźwiękowy?","a":["Skręcam w prawo","Skręcam w lewo","Maszyny pracują wstecz"],"c":0},{"q":"Co oznaczają dwa krótkie sygnały dźwiękowe?","a":["Skręcam w prawo","Skręcam w lewo","Maszyny pracują wstecz"],"c":1},{"q":"Co oznaczają trzy krótkie sygnały dźwiękowe?","a":["Maszyny pracują wstecz","Człowiek za burtą","Uwaga"],"c":0},{"q":"Co oznacza seria bardzo krótkich sygnałów dźwiękowych?","a":["Niebezpieczeństwo zderzenia","Zmiana kursu","Człowiek za burtą"],"c":0},{"q":"Jak długo trwa krótki sygnał dźwiękowy?","a":["1–2 sekundy","4–6 sekund","10 sekund"],"c":0},{"q":"Jak długo trwa długi sygnał dźwiękowy?","a":["1 sekunda","Około 4–6 sekund","Około 10 sekund"],"c":1},{"q":"Co oznacza nadawanie sygnału „człowiek za burtą”?","a":["Seria krótkich dźwięków","Seria podwójnych krótkich dźwięków","Dwa długie i jeden krótki"],"c":1},{"q":"Jakie światło pokazuje jacht motorowy poniżej 7 m?","a":["Białe światło widoczne ze wszystkich stron","Zielone światło","Czerwone światło"],"c":0},{"q":"Co oznacza, że statek pokazuje w nocy dwa czerwone","a":["Statek, który utracił manewrowość","Statek stojący na kotwicy","Statek zajęty połowem"],"c":0},{"q":"Co oznacza, że statek w nocy pokazuje jedno białe światło?","a":["Statek stojący na kotwicy","Statek w ruchu","Statek w niebezpieczeństwie"],"c":0},{"q":"Co oznacza czarna kula na maszcie w dzień?","a":["Statek stojący na kotwicy","Statek w ruchu","Statek, który nie odpowiada za swoje ruchy"],"c":0},{"q":"Co oznacza czarny stożek skierowany w dół na maszcie?","a":["Statek żaglowy płynący na żaglach i silniku","Statek stojący na kotwicy","Statek nieodpowiadający za ruchy"],"c":0},{"q":"Kiedy statek powinien zapalić światła nawigacyjne?","a":["W nocy i przy ograniczonej widzialności w dzień","Tylko w nocy","Zawsze, gdy silnik pracuje"],"c":0},{"q":"Co oznacza określenie „głębokość tranzytowa”?","a":["Najmniejsza głębokość szlaku żeglownego","Maksymalna głębokość akwenu","Średnia głębokość toru wodnego"],"c":0},{"q":"Kto przydziela numer rejestracyjny statkom sportowym?","a":["Polski Związek Motorowodny i Narciarstwa Wodnego lub Polski Związek Żeglarski","Urząd Żeglugi Śródlądowej","Kapitanat portu"],"c":0},{"q":"Co powinien zrobić kierownik statku przed wejściem do obcego portu?","a":["Przestrzegać przepisów portowych i ograniczeń prędkości","Wejść bez zgody, jeśli widoczność jest dobra","Zacumować w dowolnym miejscu"],"c":0},{"q":"Dlaczego nie wolno kotwiczyć w kanałach?","a":["Aby nie uszkodzić dna i nie utrudniać żeglugi","Bo to zabronione w dzień","Bo jest zbyt płytko"],"c":0},{"q":"Co oznacza określenie „statek pasażerski”?","a":["Statek przystosowany do przewozu więcej niż 12 pasażerów","Każda jednostka z ludźmi","Statek z kabinami"],"c":0},{"q":"Co oznacza określenie „na postoju”?","a":["Statek stojący na kotwicy lub przycumowany do brzegu","Statek w dryfie","Statek z wyłączonym silnikiem"],"c":0},{"q":"Jak należy zachować się w warunkach złej widzialności?","a":["Zmniejszyć prędkość, nadawać sygnały dźwiękowe, zachować ostrożność","Płynąć szybciej, by jak najszybciej minąć mgłę","Włączyć światła i nie zmieniać kursu"],"c":0},{"q":"Co oznacza sygnał radiowy „MAYDAY”?","a":["Wzywanie pomocy – zagrożenie życia lub zatonięcia jednostki","Ostrzeżenie o trudnych warunkach pogodowych","Zgłoszenie awarii silnika"],"c":0},{"q":"Co oznacza sygnał „PAN PAN”?","a":["Łączność pilna – nie ma zagrożenia życia, ale potrzebna jest pomoc","Ostrzeżenie meteorologiczne","Wezwanie do opuszczenia portu"],"c":0},{"q":"Co oznacza sygnał „SECURITE”?","a":["Komunikat dotyczący bezpieczeństwa żeglugi lub ostrzeżenie nawigacyjne","Wezwanie ratownicze","Prośba o kontakt z portem"],"c":0},{"q":"Która burta jest prawa na jachcie motorowym patrząc w kierunku dziobu?","a":["Burta prawa (sterburta)","Burta lewa (bakburta)","Rufa"],"c":0},{"q":"Jakie światło nosi prawa burta?","a":["Zielone","Czerwone","Białe"],"c":0},{"q":"Jakie światło nosi lewa burta?","a":["Zielone","Czerwone","Żółte"],"c":1},{"q":"Jakiego koloru jest światło rufowe?","a":["Białe","Żółte","Czerwone"],"c":0},{"q":"Jaka jest długość sektora świecenia światła burtowego?","a":["112,5°","90°","135°"],"c":0},{"q":"Jaka jest długość sektora świecenia światła masztowego?","a":["225°","180°","135°"],"c":0},{"q":"Jaka jest długość sektora świecenia światła rufowego?","a":["225°","135°","180°"],"c":1},{"q":"Co oznacza, że statek daje dzwonowe sygnały co minutę we mgle?","a":["Statek stoi na kotwicy","Statek nie odpowiada za swoje ruchy","Statek płynie z nurtem"],"c":0},{"q":"Co powinien zrobić sternik przy zbliżaniu się do mostu lub śluzy?","a":["Zmniejszyć prędkość, zachować ostrożność i przygotować cumy","Płynąć szybciej, by szybciej przejść przeszkodę","Oczekiwać, aż inne jednostki przepłyną"],"c":0},{"q":"Co oznacza sygnał: jeden krótki, jeden długi i dwa krótkie?","a":["Zatrzymaj natychmiast statek","Człowiek za burtą","Nie mogę manewrować"],"c":0},{"q":"Czy można cumować do znaków żeglugowych?","a":["Nie, jest to zabronione","Tak, do znaków ostrzegawczych","Tylko w wyjątkowych sytuacjach"],"c":0},{"q":"Kiedy nie wolno wyprzedzać innej jednostki?","a":["Przed śluzami, mostami i na odcinkach oznaczonych zakazem wyprzedzania","Gdy druga jednostka płynie szybciej","W dzień przy dobrej pogodzie"],"c":0},{"q":"Co oznacza określenie „statek w ruchu”?","a":["Statek, który nie stoi na kotwicy, nie jest przycumowany i nie osiadł na mieliźnie","Statek dryfujący bez silnika","Statek o małej prędkości"],"c":0},{"q":"Co oznacza określenie „statek zajęty połowem”?","a":["Statek łowiący narzędziami ograniczającymi manewrowość","Statek z wędkami na pokładzie","Statek przewożący ryby"],"c":0},{"q":"Co oznacza „statek pasażerski”?","a":["Jednostka przystosowana do przewozu więcej niż 12 pasażerów","Każda jednostka z ludźmi na pokładzie","Prom rzeczny"],"c":0},{"q":"Co oznacza określenie „prom na uwięzi”?","a":["Prom poruszający się po linie przymocowanej do brzegów","Prom holowany","Prom z napędem mechanicznym"],"c":0},{"q":"Co oznacza określenie „prom swobodny”?","a":["Prom przemieszczający się bez liny, z własnym napędem","Prom z silnikiem wyłączonym","Prom bez załogi"],"c":0},{"q":"Co powinien zrobić sternik przed wejściem do śluzy?","a":["Przygotować cumy, odbijacze i zmniejszyć prędkość","Przepłynąć na pełnym gazie","Poczekać, aż śluza będzie pusta"],"c":0},{"q":"Kiedy jednostka powinna wywiesić światła kotwiczne?","a":["W nocy podczas postoju na kotwicy","Tylko w porcie","Zawsze po zmroku"],"c":0},{"q":"Co oznacza sygnał flagowy biało-czerwony (litera H w kodzie MKS)?","a":["Na pokładzie znajduje się pilot morski","Statek nieodpowiadający za swoje ruchy","Człowiek za burtą"],"c":0},{"q":"Co oznacza sygnał flagowy biało-niebieski (litera P w kodzie MKS)?","a":["Na statku planowane jest wypłynięcie, wszystkie osoby muszą wrócić na pokład","Statek z niebezpiecznym ładunkiem","Żądanie pilotowania"],"c":0},{"q":"Kiedy obowiązkowo należy zgłosić rejs jednostki motorowej?","a":["Przy rejsie po wodach morskich wewnętrznych i morskich wodach przybrzeżnych","Tylko na jeziorach","Gdy załoga liczy więcej niż 10 osób"],"c":0},{"q":"Co należy zrobić po usłyszeniu sygnału „człowiek za burtą”?","a":["Utrzymać kontakt wzrokowy, oznaczyć miejsce i przystąpić do manewru ratunkowego","Od razu płynąć dalej","Wezwać pomoc przez radio i nic nie robić"],"c":0},{"q":"Kiedy nie wolno rozpocząć rejsu?","a":["Gdy jednostka jest niesprawna technicznie lub brakuje wyposażenia ratunkowego","Gdy załoga jest zmęczona","Przy lekkim deszczu"],"c":0},{"q":"Co oznacza określenie „nawietrzna burta”?","a":["Strona statku wystawiona na działanie wiatru","Strona odwrotna do kierunku wiatru","Strona zawietrzna"],"c":0},{"q":"Co należy zrobić przed rozpoczęciem rejsu?","a":["Sprawdzić stan techniczny jednostki, wyposażenie i warunki pogodowe","Odpalić silnik i wyruszyć","Upewnić się, że silnik jest zatankowany"],"c":0},{"q":"Kiedy jednostka musi mieć na pokładzie apteczkę?","a":["Zawsze","Tylko podczas rejsów morskich","Gdy załoga przekracza 3 osoby"],"c":0},{"q":"Jak należy zachować się przy zbliżaniu do kąpieliska?","a":["Zmniejszyć prędkość i zachować bezpieczną odległość","Przepłynąć środkiem kąpieliska","Płynąć jak najbliżej brzegu"],"c":0},{"q":"Jak oznaczony jest szlak żeglowny?","a":["Znakami bocznymi – czerwonymi i zielonymi","Tylko tablicami","Żółtymi pływakami"],"c":0},{"q":"Który brzeg jest prawym brzegiem rzeki?","a":["Ten, który znajduje się po prawej stronie patrząc zgodnie z kierunkiem nurtu","Ten po stronie zachodniej","Ten z większą ilością zabudowań"],"c":0},{"q":"Co oznacza czerwona boja lewostronna?","a":["Lewa granica szlaku żeglownego","Prawa granica toru wodnego","Początek odcinka zamkniętego"],"c":0},{"q":"Co oznacza zielona boja prawostronna?","a":["Prawa granica szlaku żeglownego","Lewa granica toru","Znak niebezpieczeństwa"],"c":0},{"q":"Co oznacza boja żółta z krzyżem na szczycie?","a":["Znak specjalny (np. kąpielisko, strefa treningowa)","Znak zakazu","Znak przeszkody"],"c":0},{"q":"Co oznacza czarna boja z dwoma czarnymi stożkami wierzchołkami do góry?","a":["Znak kardynalny północny – bezpieczna woda na północ od znaku","Znak południowy","Znak zachodni"],"c":0},{"q":"Co oznacza boja żółta z dwoma stożkami wierzchołkami do dołu?","a":["Znak kardynalny południowy – bezpieczna woda na południe od znaku","Znak wschodni","Znak północny"],"c":0},{"q":"Co oznacza boja czarno-żółta z wierzchołkami stożków skierowanymi od siebie?","a":["Znak kardynalny wschodni – bezpieczna woda na wschód od znaku","Znak zachodni","Znak specjalny"],"c":0},{"q":"Co oznacza boja żółto-czarna z wierzchołkami stożków skierowanymi do siebie?","a":["Znak kardynalny zachodni – bezpieczna woda na zachód od znaku","Znak północny","Znak wschodni"],"c":0},{"q":"Co oznacza boja czerwono-biała w pionowe pasy?","a":["Znak bezpiecznej wody – szlak żeglowny przebiega po obu stronach","Znak zakazu","Znak przeszkody"],"c":0},{"q":"Co oznacza żółto-niebieskie boja z krzyżem na szczycie?","a":["Znak nowej przeszkody (wrak, mielizna)","Znak kardynalny","Znak specjalny"],"c":0},{"q":"Co oznacza zielony stożek z czerwonym pasem?","a":["Skrzyżowanie torów wodnych – główny tor przebiega od zielonego","Zakaz ruchu żaglówek","Obszar zamknięty dla żeglugi"],"c":0},{"q":"Co oznacza czerwony walec z zielonym pasem?","a":["Skrzyżowanie torów wodnych – główny tor przebiega od czerwonego","Zakaz ruchu motorówek","Znak specjalny"],"c":0},{"q":"Co oznacza znak z dwiema czarnymi kulami jedna nad drugą?","a":["Odosobnione niebezpieczeństwo","Statek stojący na kotwicy","Statek rybacki"],"c":0},{"q":"  Co oznacza znak z dwoma czarnymi stożkami połączonymi podstawami?","a":["Statek zajęty trałowaniem","Statek stojący na mieliźnie","Statek holowany"],"c":0},{"q":"Jak należy zachować się przy spotkaniu z promem na uwięzi?","a":["Ustąpić pierwszeństwa promowi","Prom ustępuje statkom mniejszym","Nie ma określonych zasad"],"c":0},{"q":"Co oznacza znak A.1 (czerwona tablica z białym pasem)?","a":["Zakaz przejścia","Zakaz wyprzedzania","Zakaz postoju"],"c":0},{"q":"Co oznacza znak A.2 (biała tablica z przekreślonymi strzałkami)?","a":["Zakaz wyprzedzania","Zakaz ruchu żaglowego","Zakaz kąpieli"],"c":0},{"q":"Co oznacza znak B.1 (strzałka w prawo w czerwonej oblamówce)?","a":["Nakaz ruchu w kierunku wskazanym przez strzałkę","Zakaz ruchu","Miejsce do cumowania"],"c":0},{"q":"Co oznacza znak C.1 (biała tablica z czerwoną oblamówką i trójkątem na dolnej części tablicy, z wypisaną liczbą nad jego wierzchołkiem)?","a":["Ograniczona głębokość do 2.2m","Zakaz cumowania","Nakaz postoju"],"c":0},{"q":"Co oznacza znak E.1 (zielona tablica z białym pasem)","a":["Zezwolenie przejścia","Miejsce postoju","Zakaz kąpieli"],"c":0},{"q":"Co oznacza znak C.2 (biała tablica z czerwoną oblamówką i trójkątem na górnej części tablicy, z wypisaną liczbą nad jego wierzchołkiem)?","a":["Ograniczona wysokość prześwitu nad zwierciadłem wody","Zakaz ruchu","Miejsce dla jednostek służbowych"],"c":0},{"q":"Co oznacza znak A.8 (dwie strzałki w półokręgach skierowane w swoją stronę)?","a":["Zakaz zawracania","Zakaz kotwiczenia","Znak dla statków pasażerskich"],"c":0},{"q":"Co oznacza znak A.10 (dwa romby z czerwonymi zakończeniami i białymi wierzchołkami skierowanymi w swoją stronę)?","a":["Zakaz przejścia poza skrajnią określoną tablicami","Zakaz cumowania","Miejsce kąpielowe"],"c":0},{"q":"7Co oznacza znak żeglugowy z czarnym okręgiem w czerwonym obramowaniu i cyfrą np. 12?","a":["nakaz nieprzekraczania podanej na znaku prędkości w km/h","dopuszczalna prędkość jednostki","informacja o głębokości toru wodnego"],"c":0},{"q":"Co oznacza znak żeglugowy z czerwonym prostokątem i poziomą kreską","a":["nakaz zatrzymania statku w warunkach określonych przepisami","nakaz zachowania szczególnej ostrożności","znak ostrzegający o zwężeniu toru"],"c":0},{"q":"Co oznacza znak D.1a (Jeden żółty rąb)","a":["przejścia w obydwu kierunkach","Nakaz zwiększenia prędkości","Zakaz cumowania"],"c":0},{"q":"Jak należy zachować się przy znaku „Uwaga śluza”?","a":["Zmniejszyć prędkość, przygotować cumy i odbijacze","Przyspieszyć, by szybciej przepłynąć","Odpłynąć od znaku"],"c":0},{"q":"Co oznacza znak „Postój dozwolony”?","a":["Miejsce wyznaczone do postoju jednostek pływających","Zakaz cumowania","Nakaz ruchu w prawo"],"c":0},{"q":"Jak należy postąpić, gdy inna jednostka nie reaguje na sygnały ostrzegawcze?","a":["Zmienić kurs lub prędkość, aby uniknąć kolizji","Kontynuować rejs bez zmiany","Zatrzymać się i wyłączyć silnik"],"c":0},{"q":"Co należy zrobić po usłyszeniu pięciu krótkich sygnałów dźwiękowych?","a":["Natychmiast upewnić się, czy nie zbliża się niebezpieczeństwo zderzenia","Zatrzymać statek na środku toru","Włączyć światła ostrzegawcze"],"c":0},{"q":"Co oznacza, że statek jest „ograniczony w zdolności manewrowej”?","a":["Nie może manewrować ze względu na charakter swojej pracy lub warunki żeglugi","Jest uszkodzony mechanicznie","Ma zbyt duże zanurzenie"],"c":0},{"q":"Kto może pełnić funkcję kierownika statku sportowego?","a":["Osoba posiadająca odpowiednie uprawnienia żeglarskie","Każdy członek załogi","Armator jednostki"],"c":0},{"q":"Co oznacza, że statek jest „na kotwicy”?","a":["Stoi w miejscu, utrzymywany przez kotwicę","Dryfuje z prądem","Ma wyłączony silnik"],"c":0},{"q":"Kiedy statek uznaje się za „na mieliźnie”?","a":["Gdy osiadł na dnie i nie porusza się mimo pracy silnika lub wiatru","Gdy stoi na kotwicy","Gdy płynie z minimalną prędkością"],"c":0},{"q":"Co powinien zrobić kierownik statku przed wypłynięciem?","a":["Sprawdzić wyposażenie ratunkowe, paliwo, pogodę i stan techniczny jednostki","Zapisać trasę rejsu w dzienniku","Odpalić silnik i wypłynąć"],"c":0},{"q":"Co oznacza termin „zanurzenie”?","a":["Odległość od powierzchni wody do najniższego punktu kadłuba","Odległość od dziobu do rufy","Wysokość nadbudówki"],"c":0},{"q":"Kto odpowiada za szkody wyrządzone przez statek?","a":["Kierownik statku (sternik)","Armator","Właściciel przystani"],"c":0},{"q":"Kiedy można zredukować prędkość jednostki?","a":["W rejonie portów, kąpielisk i miejsc postoju innych jednostek","Tylko przy złej pogodzie","Na rzekach o dużej szerokości"],"c":0},{"q":"Co oznacza określenie „linia brzegowa”?","a":["Linia styku wody i lądu przy średnim stanie wody","Granica administracyjna akwenu","Brzeg rzeki o największej głębokości"],"c":0},{"q":"Kiedy należy nosić kamizelkę ratunkową?","a":["Zawsze, szczególnie przy manewrach, złej pogodzie lub w nocy","Tylko w porcie","Tylko w czasie rejsów szkoleniowych"],"c":0},{"q":"Co należy zrobić, jeśli jednostka zaczyna nabierać wody?","a":["Odciążyć ją, odpompować wodę i jeśli to możliwe – dopłynąć do brzegu","Natychmiast ją opuścić","Wzywać pomoc bez podejmowania działań"],"c":0},{"q":"Kiedy można prowadzić jednostkę po spożyciu alkoholu?","a":["Po jednym piwie","Po upływie 30 minut od spożycia","Nigdy"],"c":2},{"q":"Co oznacza „wachta”?","a":["Okres pełnienia służby przez załogę na pokładzie","Czas postoju w porcie","System sygnalizacji na jachcie"],"c":0},{"q":"Co oznacza „komenda”?","a":["Polecenie wydane przez kierownika statku","Umowa między członkami załogi","Nazwa urządzenia nawigacyjnego"],"c":0},{"q":"Kiedy statek jest „na postoju”?","a":["Gdy stoi na kotwicy lub przycumowany do brzegu","Gdy płynie bardzo wolno","Gdy wyłączył silnik"],"c":0},{"q":"Co oznacza pojęcie „tor wodny”?","a":["Część akwenu wyznaczona do bezpiecznego prowadzenia jednostek","Przestrzeń między bojami","Trasa rejsu"],"c":0},{"q":"Co oznacza określenie „nurt rzeki”?","a":["Główna część rzeki o największej prędkości przepływu","Woda stojąca przy brzegu","Zawirowania w pobliżu mostu"],"c":0},{"q":"Co oznacza określenie „brzeg lewy” na rzece?","a":["Brzeg znajdujący się po lewej stronie, patrząc zgodnie z nurtem rzeki","Brzeg, na którym jest więcej zabudowań","Brzeg zawietrzny"],"c":0},{"q":"Kiedy jednostka ma obowiązek posiadać światła pozycyjne?","a":["Od zachodu do wschodu słońca i przy ograniczonej widzialności","Tylko w nocy","Zawsze przy pracy silnika"],"c":0},{"q":"Co oznacza „światło kotwiczne”?","a":["Białe światło widoczne ze wszystkich stron, oznaczające postój na kotwicy","Światło masztowe","Światło pozycyjne"],"c":0},{"q":"Co oznacza określenie „zestaw holowany”?","a":["Jednostka lub jednostki ciągnięte przez statek holujący","Zbiornik paliwa","Zestaw lin cumowniczych"],"c":0},{"q":"Co oznacza termin „człowiek za burtą”?","a":["Wypadnięcie członka załogi do wody","Osoba w wodzie poza kąpieliskiem","Sygnał radiowy ostrzegawczy"],"c":0},{"q":"Co należy zrobić, jeśli na pokładzie wybuchnie pożar?","a":["Odciąć dopływ paliwa, odłączyć akumulator i użyć gaśnicy","Natychmiast wyskoczyć za burtę","Wezwać pomoc i nic nie robić"],"c":0},{"q":"Kiedy można przekroczyć dopuszczalną liczbę osób na pokładzie?","a":["W żadnym wypadku","Gdy rejs jest krótki","Nigdy"],"c":2},{"q":"Jak należy zachować się przy mijaniu innej jednostki?","a":["Obie jednostki powinny skręcić w prawo","Obie w lewo","Jedna się zatrzymuje"],"c":0},{"q":"Kiedy można zatrzymać jednostkę na torze wodnym?","a":["Tylko w sytuacjach awaryjnych lub na polecenie służb","Gdy nie ma innych jednostek","W dowolnym momencie"],"c":0},{"q":"Co oznacza „kurs kolizyjny”?","a":["Kurs, na którym dwie jednostki mogą się zderzyć, jeśli nie zmienią kierunku lub prędkości","Kurs równoległy","Kurs przeciwbieżny"],"c":0},{"q":"Co oznacza „manewr unikania kolizji”?","a":["Działanie mające na celu zapobieżenie zderzeniu, np. zmiana kursu lub prędkości","Ominięcie bojki","Manewr cumowania"],"c":0},{"q":"Co oznacza określenie „bezpieczna prędkość”?","a":["Taka, która pozwala uniknąć kolizji i manewrować skutecznie w danych warunkach","Taka, przy której silnik nie hałasuje","Zawsze poniżej 10 km/h"],"c":0},{"q":"Co oznacza „prędkość nadmierna”?","a":["Prędkość powodująca falowanie zagrażające innym jednostkom lub brzegom","Każda powyżej 20 km/h","Prędkość powyżej 5 węzłów"],"c":0},{"q":"Co oznacza określenie „widzialność ograniczona”?","a":["Widzialność zmniejszona przez mgłę, deszcz, śnieg lub dym","Noc","Ciemne chmury"],"c":0},{"q":"Co oznacza „ostrzegawczy sygnał dźwiękowy”?","a":["Serię krótkich dźwięków ostrzegających o niebezpieczeństwie zderzenia","Jeden długi sygnał","Dwa krótkie sygnały"],"c":0},{"q":"Co oznacza pojęcie „śluza”?","a":["Budowla umożliwiająca pokonywanie różnic poziomu wody","Zbiornik wodny","Przystań"],"c":0},{"q":"Co należy zrobić przed wejściem do śluzy?","a":["Przygotować cumy, odbijacze i zastosować się do sygnałów świetlnych","Wpłynąć natychmiast po otwarciu wrót","Czekać na wezwanie dźwiękowe"],"c":0},{"q":"Co oznacza czerwone światło przy śluzie?","a":["Zakaz wchodzenia do śluzy","Zezwolenie na wejście","Otwieranie wrót"],"c":0},{"q":"Co oznacza zielone światło przy śluzie?","a":["Zezwolenie na wejście do śluzy","Zakaz ruchu","Sygnał awaryjny"],"c":0},{"q":"Jak należy zachować się podczas śluzowania?","a":["Zachować spokój, trzymać cumy, unikać gwałtownych ruchów silnikiem","Włączyć silnik na pełne obroty","Opuścić cumy całkowicie"],"c":0},{"q":"Co oznacza określenie „przystań”?","a":["Miejsce przygotowane do cumowania jednostek","Odgałęzienie toru wodnego","Część rzeki o dużym nurcie"],"c":0},{"q":"Co oznacza określenie „basen portowy”?","a":["Akwen wydzielony do postoju jednostek w porcie","Zbiornik wodny","Rejon śluzy"],"c":0},{"q":"Co oznacza „keja”?","a":["Pomost lub pomostowa przystań do cumowania jachtów","Miejsce kąpielowe","Kotwicowisko"],"c":0},{"q":"Co oznacza „kotwicowisko”?","a":["Miejsce przeznaczone do kotwiczenia jednostek pływających","Basen portowy","Tor wodny"],"c":0},{"q":"Co oznacza „odbicie od nabrzeża”?","a":["Manewr polegający na oddaleniu jednostki od kei","Uderzenie w pomost","Zmiana kierunku ruchu"],"c":0},{"q":"Co oznacza „zacieśnienie manewru”?","a":["Zmniejszenie promienia skrętu jednostki poprzez użycie steru i napędu","Zmniejszenie prędkości","Utrzymanie kursu"],"c":0},{"q":"Co oznacza „rufa na wiatr”?","a":["Ustawienie jednostki rufą w kierunku, z którego wieje wiatr","Dziobem do wiatru","Bokiem do wiatru"],"c":0},{"q":"Co oznacza „dziobem na wiatr”?","a":["Ustawienie jednostki dziobem w kierunku, z którego wieje wiatr","Rufa do wiatru","Boczny dryf"],"c":0},{"q":"Co oznacza „dryf”?","a":["Przemieszczanie się jednostki pod wpływem wiatru lub prądu bez napędu","Ruch wsteczny silnika","Zatrzymanie jednostki"],"c":0},{"q":"Co oznacza „prąd wody”?","a":["Ruch mas wody w określonym kierunku spowodowany spadkiem poziomu lub wiatrem","Ruch fal","Fale od innych jednostek"],"c":0}],"Budowa i eksploatacja jachtu":[{"q":"Co stanowi główną część konstrukcyjną łodzi motorowej?","a":["Kadłub","Silnik","Pokład"],"c":0},{"q":"Jak nazywa się dolna część kadłuba stykająca się z wodą?","a":["Dno","Pokład","Rufa"],"c":0},{"q":"Jak nazywa się tylna pionowa część kadłuba, do której mocowany jest silnik zaburtowy?","a":["Pawęż","Kil","Stewa"],"c":0},{"q":"Jak nazywa się przednia część łodzi?","a":["Dziób","Rufa","Burta"],"c":0},{"q":"Co to jest rufa?","a":["Tylna część łodzi","Boczne poszycie kadłuba","Górna część pokładu"],"c":0},{"q":"Jak nazywa się boczna część łodzi pomiędzy dziobem a rufą?","a":["Burta","Pokład","Nadbudówka"],"c":0},{"q":"Jak nazywa się środkowa część łodzi pomiędzy dziobem a rufą?","a":["Śródokręcie","Kingston","Komora silnikowa"],"c":0},{"q":"Co to jest pokład?","a":["Górna część konstrukcji łodzi, po której porusza się załoga","Spód łodzi","Pawęż"],"c":0},{"q":"Co to jest kokpit motorówki?","a":["Otwarta część jednostki z miejscem dla sternika i pasażerów","Przedział maszynowy","Magazyn na kotwicę"],"c":0},{"q":"Co to jest ster?","a":["Urządzenie umożliwiające zmianę kierunku ruchu łodzi","Silnik napędowy","Pompa zęzowa"],"c":0},{"q":"Co to jest rumpel?","a":["Drążek lub dźwignia służąca do ręcznego sterowania łodzią","Dźwignia gazu","Zawór wody chłodzącej"],"c":0},{"q":"Co to jest układ napędowy łodzi motorowej?","a":["Zespół urządzeń przekazujących moc z silnika na śrubę napędową","System oświetlenia","Instalacja wodna"],"c":0},{"q":"Co jest głównym elementem napędu łodzi motorowej?","a":["Silnik spalinowy","Pompa zęzowa","Ster"],"c":0},{"q":"Co to jest silnik zaburtowy?","a":["Jednostka napędowa montowana na pawęży łodzi","Silnik wbudowany w kadłub","Pompa zęzowa"],"c":0},{"q":"Co to jest silnik stacjonarny?","a":["Silnik wbudowany w kadłub, połączony wałem z przekładnią i śrubą","Silnik przenośny","Silnik elektryczny akumulatorowy"],"c":0},{"q":"Co to jest przekładnia?","a":["Element napędu przenoszący napęd z silnika na śrubę napędową","Układ chłodzenia silnika","Pompka paliwa"],"c":0},{"q":"Co to jest śruba napędowa?","a":["Urządzenie przekształcające energię obrotową silnika w siłę ciągu","Część steru","Element chłodzenia"],"c":0},{"q":"Co to jest linia wału?","a":["Układ elementów łączących silnik z przekładnią i śrubą napędową","Linia wodna na kadłubie","Przewód paliwowy"],"c":0},{"q":"Co oznacza pojęcie „zanurzenie łodzi”?","a":["Odległość od linii wodnej do najniższego punktu kadłuba","Wysokość nad wodą","Szerokość jednostki"],"c":0},{"q":"Co to jest wolna burta?","a":["Odległość od linii wodnej do górnej krawędzi burty","Głębokość kadłuba","Długość całkowita łodzi"],"c":0},{"q":"Co oznacza wyporność łodzi?","a":["Ciężar wody wypartej przez zanurzoną część kadłuba","Ilość paliwa w zbiorniku","Objętość kadłuba"],"c":0},{"q":"Co oznacza ciężar własny łodzi?","a":["Masa łodzi bez paliwa, załogi i wyposażenia","Całkowity ciężar z załogą","Długość kadłuba"],"c":0},{"q":"Co oznacza ładowność jednostki?","a":["Maksymalna dopuszczalna masa załogi i ładunku","Masa pustej łodzi","Ilość paliwa w zbiorniku"],"c":0},{"q":"Co to jest tabliczka znamionowa łodzi?","a":["Tabliczka zawierająca dane techniczne jednostki, np. numer HIN, moc silnika i ładowność","Tabliczka rejestracyjna","Wskaźnik paliwa"],"c":0},{"q":"Co to jest numer HIN?","a":["Numer identyfikacyjny kadłuba jednostki (Hull Identification Number)","Numer rejestracyjny silnika","Numer seryjny akumulatora"],"c":0},{"q":"Co to jest stateczność łodzi?","a":["Zdolność jednostki do powrotu do pionu po przechyleniu","Szybkość maksymalna","Zdolność do zanurzania"],"c":0},{"q":"Co wpływa na stateczność łodzi?","a":["Szerokość kadłuba, rozkład masy i kształt dna","Kolor poszycia","Długość steru"],"c":0},{"q":"Co to jest dzielność morska?","a":["Zdolność jednostki do bezpiecznej żeglugi w trudnych warunkach","Szybkość maksymalna łodzi","Ilość miejsc na pokładzie"],"c":0},{"q":"Co to jest pompa zęzowa?","a":["Urządzenie służące do usuwania wody z wnętrza jednostki","Pompa paliwa","Pompa hydrauliczna"],"c":0},{"q":"Jakie są rodzaje pomp zęzowych?","a":["Ręczne i elektryczne","Wodne i powietrzne","Tłokowe i zębate"],"c":0},{"q":"Co to jest instalacja paliwowa?","a":["Układ doprowadzający paliwo ze zbiornika do silnika","Układ smarowania","Układ elektryczny"],"c":0},{"q":"Co to jest filtr paliwa?","a":["Element oczyszczający paliwo z zanieczyszczeń","Zawór spustowy","Wskaźnik poziomu paliwa"],"c":0},{"q":"Jakie paliwo stosuje się w silnikach benzynowych zaburtowych?","a":["Benzyna bezołowiowa","Olej napędowy","Nafta"],"c":0},{"q":"Jakie paliwo stosuje się w silniku diesla?","a":["Olej napędowy","Benzyna bezołowiowa","Nafta"],"c":0},{"q":"Co to jest układ chłodzenia silnika?","a":["System utrzymujący właściwą temperaturę pracy silnika","Układ smarowania","Układ zasilania"],"c":0},{"q":"Jakie są dwa podstawowe typy chłodzenia silników?","a":["Chłodzenie bezpośrednie i pośrednie (z wymiennikiem ciepła)","Wodne i olejowe","Powietrzne i paliwowe"],"c":0},{"q":"Co to jest układ smarowania silnika?","a":["System rozprowadzający olej w celu zmniejszenia tarcia i chłodzenia elementów silnika","Układ chłodzenia","Układ paliwowy"],"c":0},{"q":"Co należy sprawdzić przed uruchomieniem silnika spalinowego?","a":["Poziom oleju, paliwa i stan układu chłodzenia","Tylko ilość paliwa","Tylko położenie manetki gazu"],"c":0},{"q":"Co może się stać przy uruchomieniu silnika bez wody w układzie chłodzenia?","a":["Przegrzanie i uszkodzenie silnika","Zwiększenie mocy","Nic – to bez znaczenia"],"c":0},{"q":"Co oznacza biały dym z wydechu silnika Diesla?","a":["Niedogrzanie silnika lub obecność wody w paliwie","Zbyt bogata mieszanka paliwowa","Uszkodzony układ zapłonowy"],"c":0},{"q":"Co oznacza czarny dym z wydechu silnika Diesla?","a":["Zbyt bogata mieszanka paliwowa lub brudny filtr powietrza","Niedogrzanie silnika","Zbyt małe obroty biegu jałowego"],"c":0},{"q":"Co oznacza niebieski dym z wydechu silnika?","a":["Spalanie oleju silnikowego","Przegrzanie wody chłodzącej","Zbyt niskie obroty"],"c":0},{"q":"Jakie jest zadanie filtra powietrza?","a":["Oczyszcza powietrze zasysane do silnika","Filtruje olej silnikowy","Reguluje ilość paliwa"],"c":0},{"q":"Co należy zrobić po każdym rejsie w słonej wodzie?","a":["Przepłukać układ chłodzenia wodą słodką","Wypalić paliwo z gaźnika","Opróżnić zbiornik paliwa"],"c":0},{"q":"Co może powodować przegrzewanie silnika?","a":["Zatkany układ chłodzenia lub uszkodzony wirnik pompy wody","Zbyt dużo paliwa w zbiorniku","Zanieczyszczony filtr powietrza"],"c":0},{"q":"Co to jest wirnik pompy wodnej?","a":["Gumowy element wymuszający przepływ wody w układzie chłodzenia","Zawór paliwowy","Element wydechu"],"c":0},{"q":"Co oznacza brak wypływu wody chłodzącej z kontrolnego otworu?","a":["Uszkodzenie pompy wodnej lub zatkanie układu chłodzenia","Niski poziom paliwa","Nieprawidłowa praca gaźnika"],"c":0},{"q":"Co to jest akumulator?","a":["Źródło energii elektrycznej do rozruchu i zasilania urządzeń na pokładzie","Zbiornik paliwa","Pompa zęzowa"],"c":0},{"q":"Co to jest alternator?","a":["Urządzenie wytwarzające prąd w czasie pracy silnika","Regulator napięcia","Akumulator zapasowy"],"c":0},{"q":"Co oznacza kontrolka ładowania świecąca podczas pracy silnika?","a":["Brak ładowania akumulatora","Zbyt duża prędkość obrotowa","Zbyt wysokie napięcie"],"c":0},{"q":"Co należy zrobić przy zapaleniu się kontrolki temperatury silnika?","a":["Natychmiast zatrzymać silnik i sprawdzić układ chłodzenia","Zwiększyć obroty","Kontynuować rejs"],"c":0},{"q":"Jakiego rodzaju gaśnicy należy używać na jednostce motorowej?","a":["Gaśnicy proszkowej","Gaśnicy pianowej","Gaśnicy wodnej"],"c":0},{"q":"Jak często należy kontrolować stan gaśnicy?","a":["Raz w roku lub zgodnie z instrukcją producenta","Co pięć lat","Tylko po pożarze"],"c":0},{"q":"Jakie urządzenie wykrywa obecność par paliwa?","a":["Czujnik gazów lub detektor wybuchowy","Termostat","Regulator obrotów"],"c":0},{"q":"Co należy zrobić przy wycieku paliwa w komorze silnikowej?","a":["Nie uruchamiać silnika i usunąć paliwo oraz przewietrzyć komorę","Włączyć silnik, by wypalić resztki","Zakleić miejsce taśmą"],"c":0},{"q":"Co oznacza termin „ciąg wsteczny”?","a":["Ruch jednostki do tyłu po włączeniu biegu wstecznego","Zmniejszenie obrotów silnika","Siła ciągu śruby w wodzie"],"c":0},{"q":"Co to jest manetka gazu?","a":["Dźwignia służąca do regulacji obrotów silnika","Ster","Zawór paliwowy"],"c":0},{"q":"Co to jest bieg neutralny (luz)?","a":["Pozycja przekładni, w której śruba się nie obraca","Maksymalne obroty silnika","Tryb awaryjny"],"c":0},{"q":"Co to jest czujnik trymu?","a":["Wskaźnik położenia silnika względem lustra wody","Regulator obrotów","Czujnik ciśnienia paliwa"],"c":0},{"q":"Co oznacza pojęcie „trymowanie silnika”?","a":["Ustawianie kąta nachylenia silnika w celu poprawy osiągów łodzi","Regulacja obrotów biegu jałowego","Ustawienie kąta steru"],"c":0},{"q":"Co powoduje zbyt duże wychylenie silnika do góry (trim up)?","a":["Łódź podskakuje i traci przyczepność śruby","Zwiększenie prędkości","Zmniejszenie spalania"],"c":0},{"q":"Co powoduje zbyt duże opuszczenie silnika (trim down)?","a":["Zwiększony opór wody i przeciążenie silnika","Mniejsze falowanie","Brak sterowności"],"c":0},{"q":"Co należy zrobić przy pierwszym uruchomieniu silnika po zimowaniu?","a":["Sprawdzić olej, filtr paliwa, wirnik pompy i akumulator","Od razu uruchomić silnik","Przepłukać paliwo"],"c":0},{"q":"Co należy zrobić po zakończeniu sezonu żeglugowego?","a":["Zimować silnik zgodnie z instrukcją i opróżnić układ z wody","Zostawić paliwo w zbiorniku","Nie wykonywać żadnych czynności"],"c":0},{"q":"Co należy zrobić, jeśli po uruchomieniu silnika nie wypływa woda chłodząca?","a":["Wyłączyć silnik i sprawdzić wirnik pompy","Kontynuować pracę","Zwiększyć obroty"],"c":0},{"q":"Co oznacza hałas w przekładni przy włączeniu biegu?","a":["Nieprawidłowe obroty biegu jałowego lub uszkodzenie przekładni","Brak paliwa","Uszkodzony ster"],"c":0},{"q":"Co oznacza pojęcie „rewers”?","a":["Mechanizm umożliwiający zmianę kierunku obrotów śruby napędowej","Dźwignia gazu","Pompa paliwa"],"c":0},{"q":"Co oznacza pojęcie „śruba kawitująca”?","a":["Śruba obracająca się w pęcherzach pary, co obniża skuteczność napędu","Śruba o dużej średnicy","Śruba przeciwbieżna"],"c":0},{"q":"Co to jest układ wydechowy silnika zaburtowego?","a":["System odprowadzający spaliny poza kadłub, często przez pędnik lub kolumnę silnika","Układ chłodzenia","Układ smarowania"],"c":0},{"q":"Co to jest przegląd okresowy silnika?","a":["Zestaw czynności kontrolnych i konserwacyjnych wykonywanych po określonym czasie pracy","Regulacja obrotów biegu jałowego","Wymiana paliwa"],"c":0},{"q":"Co to jest układ sterowania?","a":["System urządzeń umożliwiających zmianę kursu jednostki","Układ napędowy","Instalacja elektryczna"],"c":0},{"q":"Co to jest główna tablica rozdzielcza?","a":["Panel sterujący obwodami elektrycznymi jednostki","Wskaźnik obrotów","Przełącznik akumulatora"],"c":0},{"q":"Co to jest bezpiecznik elektryczny?","a":["Element zabezpieczający instalację przed przeciążeniem","Wyłącznik silnika","Wskaźnik napięcia"],"c":0},{"q":"Co to jest masa w instalacji elektrycznej łodzi?","a":["Ujemny biegun instalacji elektrycznej połączony z kadłubem lub punktem wspólnym","Dodatni przewód","Przewód paliwowy"],"c":0},{"q":"Co oznacza pojęcie „uziemienie”?","a":["Połączenie elementów metalowych z kadłubem dla bezpieczeństwa elektrycznego","Złącze paliwowe","Obudowa silnika"],"c":0},{"q":"Co oznacza pojęcie „rezystancja”?","a":["Opór elektryczny przewodnika","Prędkość obrotowa","Temperatura spalania"],"c":0},{"q":"Co to jest bezpiecznik automatyczny?","a":["Urządzenie, które samoczynnie odcina prąd w razie przeciążenia i umożliwia ponowne włączenie","Bezpiecznik topikowy","Wyłącznik awaryjny"],"c":0},{"q":"Co to jest wyłącznik bezpieczeństwa (kill switch, zrywka)?","a":["Urządzenie, które zatrzymuje silnik po odłączeniu linki z nadgarstka sternika","Przycisk startu","Regulator obrotów"],"c":0},{"q":"Co oznacza pojęcie „opór hydrodynamiczny”?","a":["Siła przeciwna ruchowi łodzi w wodzie","Siła naporu wiatru","Ciśnienie w zbiorniku paliwa"],"c":0},{"q":"Co oznacza pojęcie „ślizg”?","a":["Stan, w którym kadłub łodzi częściowo unosi się nad wodą dzięki prędkości","Poślizg śruby","Poślizg steru"],"c":0},{"q":"Co oznacza pojęcie „kadłub wypornościowy”?","a":["Kadłub, który cały czas opiera się o wodę całą powierzchnią dna","Kadłub unoszący się całkowicie nad wodą","Kadłub pneumatyczny"],"c":0},{"q":"Co oznacza pojęcie „kadłub ślizgowy”?","a":["Kadłub, który przy dużej prędkości częściowo unosi się nad wodą","Kadłub drewniany","Kadłub pontonowy"],"c":0},{"q":"Co to jest „zanurzenie robocze”?","a":["Zanurzenie łodzi z pełnym obciążeniem","Zanurzenie pustego kadłuba","Maksymalna głębokość pływania"],"c":0},{"q":"Co oznacza pojęcie „ciąg śruby”?","a":["Siła wytwarzana przez śrubę napędową","Siła oporu wody","Prędkość obrotowa silnika"],"c":0},{"q":"Co to jest linia wodna?","a":["Linia oddzielająca część zanurzoną od nadwodnej kadłuba","Poziom paliwa","Kierunek wiatru"],"c":0},{"q":"Co to jest fala rufowa?","a":["Fala tworzona za płynącą łodzią","Fala boczna","Zawirowanie dziobowe"],"c":0},{"q":"Co oznacza pojęcie „burta prawa”?","a":["Strona łodzi po prawej ręce sternika patrzącego w kierunku dziobu","Strona przeciwna do lewej","Strona nawietrzna"],"c":0},{"q":"Co oznacza pojęcie „burta lewa”?","a":["Strona łodzi po lewej ręce sternika patrzącego w kierunku dziobu","Strona rufowa","Strona pod wiatr"],"c":0},{"q":"Co oznacza pojęcie „przewietrzanie komory silnikowej”?","a":["Usuwanie oparów paliwa i par z zamkniętej przestrzeni przed uruchomieniem silnika","Otwieranie drzwi kabiny","Oczyszczanie filtra powietrza"],"c":0},{"q":"Co należy zrobić przed pierwszym uruchomieniem silnika dnia?","a":["Sprawdzić poziom oleju, paliwa i czy nie ma wycieków","Zwiększyć obroty","Sprawdzić kolor wody"],"c":0},{"q":"Co to jest „czujnik temperatury silnika”?","a":["Urządzenie monitorujące temperaturę układu chłodzenia","Regulator prędkości","Termostat"],"c":0},{"q":"Co to jest „termistor”?","a":["Element elektryczny zmieniający opór w zależności od temperatury","Bezpiecznik","Przekaźnik"],"c":0},{"q":"Co to jest „układ paliwowy”?","a":["Zespół przewodów, zbiornika i pomp doprowadzających paliwo do silnika","Układ wydechowy","Układ smarowania"],"c":0},{"q":"Co to jest „gaźnik”?","a":["Urządzenie mieszające paliwo z powietrzem w silniku benzynowym","Filtr paliwa","Regulator prędkości"],"c":0},{"q":"Co to jest „wtryskiwacz”?","a":["Element rozpylający paliwo do komory spalania w silniku Diesla","Zawór paliwa","Czujnik przepływu"],"c":0},{"q":"Co oznacza pojęcie „obroty biegu jałowego”?","a":["Minimalne obroty silnika utrzymujące jego pracę bez obciążenia","Maksymalne obroty","Pozycję neutralną manetki"],"c":0},{"q":"Co to jest „wskaźnik obrotów” (obrotomierz)?","a":["Urządzenie pokazujące prędkość obrotową silnika","Wskaźnik poziomu paliwa","Termometr"],"c":0},{"q":"Co to jest „wskaźnik paliwa”?","a":["Urządzenie wskazujące ilość paliwa w zbiorniku","Zawór paliwa","Przepływomierz"],"c":0},{"q":"Co to jest „klin sterowniczy”?","a":["Mechaniczny element ograniczający wychylenie steru lub silnika","Element przekładni","Ogranicznik przepływu paliwa"],"c":0},{"q":"Co oznacza „blokada biegu”?","a":["Zabezpieczenie uniemożliwiające przypadkowe włączenie biegu","Hamulec","Zawór paliwa"],"c":0},{"q":"Co to jest „napęd strugowodny (jet)”","a":["Układ napędowy, w którym strumień wody wyrzucany jest dyszą dla uzyskania ciągu","Silnik elektryczny","Pędnik boczny"],"c":0},{"q":"Co to jest „pędnik azymutalny”?","a":["Napęd, którego śruba obraca się wokół osi pionowej, pozwalając sterować ciągiem w dowolnym kierunku","Napęd klasyczny","Silnik zaburtowy"],"c":0},{"q":"Co to jest „ster strumieniowy”?","a":["Urządzenie pomocnicze ułatwiające manewrowanie przy małej prędkości","Główny ster łodzi","Pompa chłodzenia"],"c":0},{"q":"Co należy zrobić po zakończeniu rejsu motorówką?","a":["Zgasić silnik, przewietrzyć komorę, odłączyć akumulator i zabezpieczyć jednostkę","Zostawić silnik włączony na biegu jałowym","Zlać paliwo do kanistra"],"c":0}],"Meteorologia":[{"q":"Co to jest meteorologia?","a":["Nauka o falach na jeziorach","Nauka o zjawiskach zachodzących w atmosferze","Nauka o pływach i prądach"],"c":1},{"q":"Co to jest ciśnienie atmosferyczne?","a":["Nacisk powietrza na powierzchnię ziemi","Siła wiatru","Temperatura powietrza"],"c":0},{"q":"W jakich jednostkach mierzy się ciśnienie atmosferyczne?","a":["Stopniach Celsjusza","Hektopaskalach (hPa)","Milimetrach wody"],"c":1},{"q":"Jaka jest średnia wartość ciśnienia atmosferycznego na poziomie morza?","a":["760 hPa","1013 hPa","100 hPa"],"c":1},{"q":"Co to jest izobara?","a":["Linia równej temperatury","Linia łącząca punkty o jednakowym ciśnieniu","Linia kierunku wiatru"],"c":1},{"q":"Skąd wieje wiatr?","a":["Z kierunku, w którym zmierza","Z kierunku, z którego napływa powietrze","Z południa zawsze"],"c":1},{"q":"Co oznacza silny spadek ciśnienia?","a":["Poprawę pogody","Zbliżanie się niżu i pogorszenie pogody","Ustanie wiatru"],"c":1},{"q":"Co oznacza wzrost ciśnienia atmosferycznego?","a":["Zbliżanie się burzy","Zwiększenie wilgotności","Poprawę pogody i osłabienie wiatru"],"c":2},{"q":"Co to jest wyż baryczny?","a":["Obszar wysokiego ciśnienia, zwykle z ładną pogodą","Obszar niskiego ciśnienia","Strefa frontu"],"c":0},{"q":"Co to jest niż baryczny?","a":["Obszar wysokiego ciśnienia","Obszar niskiego ciśnienia, często z chmurami i opadami","Miejsce o bezwietrznej pogodzie"],"c":1},{"q":"Jak powstaje wiatr?","a":["Z różnicy ciśnień między dwoma obszarami","Z różnicy temperatur wody","Z ruchu planetarnego Ziemi"],"c":0},{"q":"Co oznacza nagła zmiana kierunku wiatru i spadek temperatury?","a":["Wejście wyżu","Przejście frontu chłodnego","Początek niżu"],"c":1},{"q":"Jakie chmury zwiastują zbliżanie się frontu chłodnego?","a":["Cirrusy i cumulusy","Cumulonimbusy","Warstwowe Altostratus i Nimbostratus"],"c":2},{"q":"Jakie chmury zapowiadają burzę?","a":["Cirrostratus","Cumulonimbus (kłębiasto-deszczowe)","Stratus"],"c":1},{"q":"Jakie chmury zwiastują dobrą pogodę?","a":["Cirrus (pierwszorzędne, delikatne)","Nimbostratus","Cumulonimbus"],"c":0},{"q":"Co to jest front atmosferyczny?","a":["Granica między wodą a lądem","Strefa zetknięcia dwóch mas powietrza o różnych właściwościach","Obszar ciszy"],"c":1},{"q":"Co to jest front chłodny?","a":["Napływ chłodnego powietrza wypierającego ciepłe – przynosi burze i ochłodzenie","Napływ ciepłego powietrza","Zanik wiatru"],"c":0},{"q":"Co to jest front ciepły?","a":["Napływ chłodnego powietrza","Napływ cieplejszego powietrza nad chłodniejsze – przynosi chmury warstwowe i mżawkę","Strefa ciszy"],"c":1},{"q":"Co zapowiadają chmury Cirrostratus tworzące halo wokół słońca?","a":["Zbliżanie się frontu ciepłego","Rozpogodzenie","Wzrost temperatury"],"c":0},{"q":"Co to jest rosa?","a":["Skutek parowania","Skutek opadów","Skroplenie pary wodnej na chłodnych powierzchniach"],"c":2},{"q":"Co to jest mgła?","a":["Zawiesina mikroskopijnych kropelek wody w powietrzu ograniczająca widzialność","Kondensacja pary w wysokich warstwach atmosfery","Rzadki deszcz"],"c":0},{"q":"Co to jest punkt rosy?","a":["Temperatura, przy której rozpoczyna się kondensacja pary wodnej","Temperatura wrzenia","Temperatura topnienia lodu"],"c":0},{"q":"Co należy zrobić, gdy widoczność spada z powodu mgły?","a":["Zwiększyć prędkość","Włączyć oświetlenie pozycyjne i dźwiękowe sygnały","Zmniejszyć prędkość i zachować szczególną ostrożność"],"c":2},{"q":"W jaki sposób powstaje bryza dzienna?","a":["Wiatr wiejący z wody w stronę lądu wskutek nagrzania brzegu","Wiatr wiejący z lądu ku wodzie","Wiatr z południa"],"c":0},{"q":"Co to jest bryza nocna?","a":["Wiatr wiejący z lądu ku wodzie, gdy brzeg szybciej się wychładza","Wiatr z morza na ląd","Wiatr halny"],"c":0},{"q":"Co to jest „szkwał”?","a":["Gwałtowny, krótkotrwały wzrost prędkości wiatru","Długotrwały wiatr zachodni","Cichy wiatr poranny"],"c":0},{"q":"Jakie chmury zwykle towarzyszą szkwałowi?","a":["Cirrus","Stratus","Cumulonimbus"],"c":2},{"q":"Co to jest „trąba wodna”?","a":["Wir powietrza łączący chmurę burzową z powierzchnią wody","Prąd morski","Gwałtowny deszcz"],"c":0},{"q":"Co to jest burza?","a":["Zjawisko atmosferyczne z piorunami, grzmotami i opadami","Silny wiatr bez opadów","Mgła z deszczem"],"c":0},{"q":"Jak zachować się na łodzi podczas burzy?","a":["Stanąć na środku łodzi","Dotykać metalowych elementów","Opuścić anteny, unikać dotykania metalu i przeczekać z dala od brzegu"],"c":2},{"q":"Co oznacza nagły wzrost siły wiatru i ciemne chmury od zachodu?","a":["Nadciąga front chłodny","Zbliża się wyż","Ustanie wiatr"],"c":0},{"q":"Jakie wiatry dominują w Polsce?","a":["Południowe","Zachodnie i południowo-zachodnie","Północne"],"c":1},{"q":"Jakie warunki sprzyjają powstawaniu mgły nad jeziorem?","a":["Silny wiatr i upał","Spokojna noc, duża wilgotność i chłodne powietrze","Wysokie ciśnienie i brak chmur"],"c":1},{"q":"Co oznacza bardzo wysoka wilgotność powietrza?","a":["Możliwość wystąpienia mgieł i opadów","Spadek temperatury","Brak wiatru"],"c":0},{"q":"Co należy zrobić, gdy nadciąga szkwał?","a":["Zmniejszyć prędkość, ustawić dziób pod wiatr i utrzymywać sterowność","Przyspieszyć, by szybciej go opuścić","Stanąć bokiem do wiatru"],"c":0},{"q":"Co zapowiada ciepły i suchy wiatr z południa?","a":["Pogorszenie pogody","Poprawę i ocieplenie","Zmianę ciśnienia"],"c":1},{"q":"Co to jest „cisza atmosferyczna”?","a":["Stan braku wiatru i falowania","Brak opadów","Spadek ciśnienia"],"c":0},{"q":"Co oznacza nagły spadek temperatury i zmiana kierunku wiatru z południowego na północny?","a":["Wejście wyżu","Przejście frontu chłodnego","Zmiana lokalna"],"c":1},{"q":"Jakie urządzenie służy do pomiaru prędkości wiatru?","a":["Barometr","Anemometr","Termometr"],"c":1},{"q":"Jakie urządzenie służy do pomiaru ciśnienia atmosferycznego?","a":["Barometr","Psychrometr","Higrometr"],"c":0},{"q":"Jakie chmury występują najwyżej w atmosferze?","a":["Nimbostratus","Cirrus","Cumulus"],"c":1},{"q":"Jakie chmury najczęściej przynoszą długotrwałe opady deszczu?","a":["Nimbostratus","Cumulonimbus","Cirrus"],"c":0},{"q":"Jakie chmury mają wygląd pierzasty i występują na dużych wysokościach?","a":["Cumulus","Stratus","Cirrus"],"c":2},{"q":"Co oznacza pojawienie się chmur Cumulonimbus nad horyzontem?","a":["Możliwość burzy lub silnego wiatru","Poprawę pogody","Zanikanie wiatru"],"c":0},{"q":"Jakie chmury wskazują na zbliżanie się frontu ciepłego?","a":["Cumulus","Cirrostratus i Altostratus","Stratus"],"c":1},{"q":"Jakie chmury zwiastują ustępowanie burzy?","a":["Cumulonimbus","Nimbostratus","Stratus i Stratocumulus"],"c":2},{"q":"Co to jest wilgotność względna powietrza?","a":["Ilość pary wodnej w powietrzu w gramach","Stosunek ciśnienia powietrza suchego do mokrego","Stosunek aktualnej ilości pary wodnej do maksymalnej możliwej w danej temperaturze"],"c":2},{"q":"Jakie urządzenie służy do pomiaru wilgotności powietrza?","a":["Barometr","Higrometr (lub psychrometr)","Termometr"],"c":1},{"q":"Co oznacza pojęcie „konwekcja”?","a":["Wznoszenie się ciepłego powietrza i opadanie chłodnego","Poziomy ruch powietrza","Zmiana ciśnienia w wyżu"],"c":0},{"q":"Jakie warunki sprzyjają powstawaniu konwekcji?","a":["Zimne powietrze i silny wiatr","Mgła i wysoka wilgotność","Nagrzanie powierzchni ziemi przez słońce i bezchmurne niebo"],"c":2},{"q":"Co jest przyczyną powstawania burz?","a":["Szybkie wznoszenie się ciepłego i wilgotnego powietrza","Ochłodzenie wyżu","Brak wiatru"],"c":0},{"q":"Jakie objawy na niebie wskazują na zbliżającą się burzę?","a":["Jasne smugi chmur wysokich","Narastające chmury Cumulonimbus i ciemne podstawy chmur","Rozproszone cirrusy"],"c":1},{"q":"Co to jest grzmot?","a":["Dźwięk powstający w wyniku gwałtownego rozprężania się powietrza po błyskawicy","Efekt uderzenia pioruna w ziemię","Dźwięk padającego deszczu"],"c":0},{"q":"Jak powstaje błyskawica?","a":["Z odbicia światła od chmur","Z rozładowania elektrycznego między chmurami lub między chmurą a ziemią","Z konwekcji cieplnej"],"c":1},{"q":"Jak oszacować odległość burzy?","a":["Policz sekundy między błyskiem a grzmotem i podziel przez 3 (1 s ≈ 333 m)","Policz błyskawice","Pomnóż sekundy przez 10"],"c":0},{"q":"Co zrobić, jeśli podczas rejsu zbliża się burza?","a":["Zwiększyć prędkość","Płynąć dalej środkiem akwenu","Szukać bezpiecznego schronienia i unikać otwartej wody"],"c":2},{"q":"Jak zachować się na otwartej wodzie w czasie burzy?","a":["Wypuścić cumy","Ustawić dziób pod wiatr, unikać kontaktu z metalem i antenami","Stać na dziobie"],"c":1},{"q":"Co oznacza długotrwały, umiarkowany wiatr z jednego kierunku?","a":["Bliską burzę","Ustabilizowaną pogodę","Zanik wyżu"],"c":1},{"q":"Co to jest zjawisko „grad”?","a":["Duże krople deszczu","Zamarznięte bryłki lodu powstające w chmurach burzowych","Cząsteczki lodu na wodzie"],"c":1},{"q":"Jakie warunki sprzyjają powstawaniu gradu?","a":["Wysokie ciśnienie","Suchy wiatr","Silne prądy wstępujące w chmurach burzowych"],"c":2},{"q":"Co oznacza powstawanie fal o krótkiej długości na jeziorze przy silnym wietrze?","a":["Wiatr ma długą drogę nawietrzną i silne tarcie z powierzchnią wody","Wiatr wieje z brzegu","Wiatr ustaje"],"c":0},{"q":"Co to jest zjawisko „fala stojąca”?","a":["Fala poruszająca się z wiatrem","Fala odbita od przeszkody, nakładająca się na fale nadchodzące","Fala powstała od deszczu"],"c":1},{"q":"Jakie zjawisko może wystąpić przy nagłym spadku temperatury po gorącym dniu?","a":["Wyciszenie wiatru","Mgła radiacyjna","Deszcz konwekcyjny"],"c":1},{"q":"Co to jest „wiatr halny”?","a":["Ciepły, suchy i porywisty wiatr z gór","Wiatr znad morza","Wiatr chłodny z północy"],"c":0},{"q":"Jak wpływa temperatura wody na pogodę w jej otoczeniu?","a":["Nie ma wpływu","Duże zbiorniki wodne łagodzą wahania temperatury","Powoduje burze"],"c":1},{"q":"Co oznacza, gdy rano powietrze jest zimne, a niebo czyste po deszczu?","a":["Ustabilizowanie pogody – wejście wyżu","Nadchodzący niż","Początek burzy"],"c":0},{"q":"Co oznacza pojawienie się tęczy po burzy?","a":["Kolejną burzę","Ustępowanie frontu burzowego i poprawę pogody","Front ciepły"],"c":1},{"q":"Co to jest rosa wieczorna?","a":["Opad atmosferyczny","Kondensacja pary wodnej na chłodnych powierzchniach po zachodzie słońca","Mgła niska"],"c":1},{"q":"Co to jest szron?","a":["Osad lodowy powstały z pary wodnej w temperaturze poniżej 0°C","Zamarznięta rosa","Śnieg"],"c":0},{"q":"Co to jest gołoledź?","a":["Lód na rzece","Warstwa lodu powstała po opadach marznącego deszczu","Ośnieżony lód"],"c":1},{"q":"Jakie warunki pogodowe są najbezpieczniejsze dla żeglugi motorowej?","a":["Słaby wiatr, stałe ciśnienie i dobra widzialność","Silny wiatr i niskie ciśnienie","Mgła i wyż baryczny"],"c":0},{"q":"Co oznacza duży gradient ciśnienia na mapie pogodowej?","a":["Silny wiatr","Bezruch powietrza","Ustępowanie frontu"],"c":0},{"q":"Co oznacza gęsto rozmieszczone izobary?","a":["Występowanie silnego wiatru","Spokojną pogodę","Brak opadów"],"c":0},{"q":"Co oznacza rzadkie rozmieszczenie izobar?","a":["Silny wiatr","Słaby wiatr i stabilna pogoda","Burze"],"c":1},{"q":"Co zapowiada równoczesny spadek temperatury i wzrost wilgotności?","a":["Możliwość opadów lub mgły","Zanik wiatru","Ustąpienie chmur"],"c":0},{"q":"Jakie zjawisko powstaje przy zetknięciu się ciepłego i wilgotnego powietrza z chłodnym podłożem?","a":["Mgła adwekcyjna","Mgła radiacyjna","Rosa"],"c":0},{"q":"Co to jest „wiatr gradientowy”?","a":["Wiatr w porcie","Wiatr powstający w wyniku różnicy ciśnień między izobarami","Wiatr lokalny"],"c":1},{"q":"Co oznacza skrót IMGW?","a":["Instytut Meteorologii i Gospodarki Wodnej","Instytut Marynarki Głównej Wodnej","Instytut Meteorologii Górskiej"],"c":0},{"q":"Skąd można uzyskać aktualną prognozę pogody dla żeglugi śródlądowej?","a":["Tylko z radia","Tylko z kapitanatu","Z komunikatów IMGW, internetu lub aplikacji pogodowych"],"c":2},{"q":"Co oznacza symbol ⚡ w komunikacie meteorologicznym?","a":["Wiatr halny","Burze z wyładowaniami","Mgły"],"c":1},{"q":"Co oznacza ostrzeżenie IMGW „2° burze”?","a":["Możliwość wystąpienia silnych burz z wiatrem i gradem","Słabe opady","Wzrost temperatury"],"c":0},{"q":"Co oznacza ostrzeżenie meteorologiczne „1° wiatr”?","a":["Silny wiatr, wymagający zachowania ostrożności na wodzie","Huragan","Cisza wiatrowa"],"c":0},{"q":"Co należy zrobić przy komunikacie IMGW o burzach 3. stopnia?","a":["Kontynuować rejs","Natychmiast zejść z wody i zabezpieczyć jednostkę","Włączyć światła i płynąć dalej"],"c":1},{"q":"Co to jest „strefa opadowa”?","a":["Obszar, w którym występują aktualnie opady deszczu lub śniegu","Miejsce o niskim ciśnieniu","Strefa mgły"],"c":0},{"q":"Co to jest „chmura burzowa”?","a":["Stratus","Cumulonimbus","Cirrus"],"c":1},{"q":"Co to jest „wiatr fenowy”?","a":["Ciepły, suchy wiatr zstępujący z gór po stronie zawietrznej","Wiatr z morza","Bryza dzienna"],"c":0},{"q":"Co oznacza stabilne wysokie ciśnienie przez kilka dni?","a":["Zbliżającą się burzę","Utrzymującą się dobrą pogodę","Wzrost wilgotności"],"c":1},{"q":"Co oznacza spadek ciśnienia o 10 hPa w ciągu 3 godzin?","a":["Zbliżający się niż i załamanie pogody","Ustabilizowanie warunków","Osłabienie wiatru"],"c":0},{"q":"Jakie zjawisko atmosferyczne może powodować gwałtowne zmiany kierunku wiatru?","a":["Wyż","Przejście frontu chłodnego","Mgła"],"c":1},{"q":"Co oznacza „cisza przed burzą”?","a":["Czasowe uspokojenie wiatru przed nadejściem frontu burzowego","Trwałe ustanie wiatru","Wyż baryczny"],"c":0},{"q":"Jakie warunki sprzyjają tworzeniu się rosy?","a":["Wiatr i wysokie ciśnienie","Spokojna noc, duża wilgotność i chłodne podłoże","Burzowa pogoda"],"c":1},{"q":"Co oznacza skrót UV w prognozach?","a":["Wskaźnik opadów","Promieniowanie ultrafioletowe","Wilgotność względna"],"c":1},{"q":"Jakie promieniowanie słoneczne jest najbardziej niebezpieczne dla skóry?","a":["Podczerwone","Ultrafioletowe (UV)","Widzialne"],"c":1},{"q":"Co to jest „wiatr lokalny”?","a":["Wiatr powstający w wyniku różnic temperatur między lądem a wodą","Wiatr gradientowy","Wiatr halny"],"c":0},{"q":"Co oznacza zanik wiatru i wzrost temperatury przy niskim ciśnieniu?","a":["Zbliżający się niż – możliwe opady i burze","Ustabilizowanie pogody","Front ciepły"],"c":0},{"q":"Co to jest „fala chłodu”?","a":["Wiatr północny","Okres nagłego ochłodzenia z nocnymi przymrozkami","Szkwał"],"c":1},{"q":"Co to jest „fala upałów”?","a":["Okres kilku dni z temperaturą powyżej 30°C","Prąd powietrza","Ciśnienie wyżowe"],"c":0},{"q":"Co to jest „inwersja temperatury”?","a":["Wzrost temperatury wraz z wysokością, hamujący ruch powietrza","Spadek ciśnienia","Mgła"],"c":0},{"q":"Co to jest „izoterma”?","a":["Linia równego ciśnienia","Linia równej temperatury","Linia wiatru"],"c":1},{"q":"Jakie są najczęstsze kierunki wiatru w Polsce latem?","a":["Północno-wschodnie","Zachodnie i południowo-zachodnie","Wschodnie i północne"],"c":1},{"q":"Co to jest „komunikat pogodowy dla żeglugi”?","a":["Raport z ruchu statków","Informacja o aktualnych i prognozowanych warunkach atmosferycznych na akwenach","Meldunek o stanie toru wodnego"],"c":1},{"q":"Kiedy najlepiej sprawdzić prognozę pogody przed rejsem?","a":["Bezpośrednio przed wypłynięciem i na bieżąco w czasie rejsu","Dzień po rejsie","Raz w tygodniu"],"c":0},{"q":"Co oznacza symbol trzech kropli na mapie pogodowej?","a":["Mgłę","Opady deszczu","Grad"],"c":1},{"q":"Co oznacza symbol śnieżynki w prognozie?","a":["Opady śniegu","Mgłę","Niską wilgotność"],"c":0},{"q":"Jakie zjawisko powoduje obniżenie widoczności oprócz mgły?","a":["Wysokie ciśnienie","Czyste powietrze","Deszcz, śnieg, zamglenie lub dym"],"c":2},{"q":"Co to jest „poryw wiatru”?","a":["Stała siła wiatru","Krótkotrwałe, gwałtowne zwiększenie prędkości wiatru","Wiatr z północy"],"c":1},{"q":"Co należy zrobić przy silnym porywistym wietrze na jeziorze?","a":["Zmniejszyć prędkość i ustawić łódź dziobem do wiatru","Obrócić rufą pod wiatr","Stanąć bokiem do fali"],"c":0},{"q":"Jakie zjawisko często występuje po przejściu frontu chłodnego?","a":["Silny, porywisty wiatr i ochłodzenie","Spadek ciśnienia i mgła","Bezchmurne niebo i upał"],"c":0},{"q":"Co oznacza silny wiatr i ciemne chmury w krótkim czasie?","a":["Wejście wyżu","Mgłę","Zbliżanie się frontu burzowego"],"c":2},{"q":"Co zrobić, jeśli w czasie rejsu gwałtownie zmienia się kierunek wiatru?","a":["Natychmiast zmniejszyć prędkość i dostosować kurs do nowych warunków","Przyspieszyć, by utrzymać kurs","Nie reagować"],"c":0},{"q":"Co to jest Beauforta skala wiatru?","a":["Skala opadów","Skala temperatur","Skala siły wiatru w 12 stopniach"],"c":2},{"q":"Co oznacza wiatr 6°B w skali Beauforta?","a":["Silny wiatr (ok. 10–12 m/s) – trudne warunki na wodzie","Lekkie powiewy","Cisza"],"c":0},{"q":"Co oznacza 0°B w skali Beauforta?","a":["Słaby wiatr","Ciszę – brak ruchu powietrza","Szkwał"],"c":1},{"q":"Co oznacza 3°B w skali Beauforta?","a":["Ciszę","Sztorm","Umiarkowany wiatr – korzystny do żeglugi rekreacyjnej"],"c":2},{"q":"Co oznacza wiatr 8°B w skali Beauforta?","a":["Sztormowy wiatr, bardzo niebezpieczny dla małych jednostek","Słaby powiew","Umiarkowany wiatr"],"c":0},{"q":"Jak zmienia się fala przy wzroście siły wiatru?","a":["Maleje","Zwiększa wysokość i długość","Zanika"],"c":1},{"q":"Co to jest „fala martwa”?","a":["Fale utrzymujące się po ustaniu wiatru","Fala burzowa","Fala odbita od brzegu"],"c":0},{"q":"Jakie chmury są zwiastunem stabilnej pogody po burzy?","a":["Cumulonimbus","Stratus i Altocumulus","Nimbostratus"],"c":1},{"q":"Co oznacza czerwony zachód słońca?","a":["Zapowiada dobrą pogodę","Zbliżającą się burzę","Niskie ciśnienie"],"c":0},{"q":"Co oznacza czerwony wschód słońca?","a":["Zbliżające się pogorszenie pogody","Rozpogodzenie","Mgłę"],"c":0},{"q":"Jakie zjawisko może powodować „parowanie wody” widoczne nad jeziorem o świcie?","a":["Front chłodny","Duża różnica temperatur między wodą a powietrzem","Wiatr fenowy"],"c":1},{"q":"Co to jest „rosa poranna”?","a":["Opad","Skroplona para wodna na powierzchniach po chłodnej nocy","Mgła radiacyjna"],"c":1},{"q":"Co należy zrobić po otrzymaniu ostrzeżenia o silnych burzach?","a":["Przełożyć rejs lub pozostać w porcie","Wypłynąć wcześniej","Płynąć środkiem akwenu"],"c":0},{"q":"Co oznacza długotrwałe utrzymywanie się mgły przy wysokiej wilgotności?","a":["Utrzymujący się niż i stagnacja powietrza","Front ciepły","Wejście wyżu"],"c":0},{"q":"Jakie zjawisko może wystąpić po szybkim ochłodzeniu powietrza po gorącym dniu?","a":["Ustanie wiatru","Burze lub silny wiatr konwekcyjny","Spadek ciśnienia"],"c":1},{"q":"Co oznacza silny wiatr wiejący w kierunku brzegu?","a":["Wzrost ciśnienia","Niebezpieczeństwo uderzenia o brzeg – zachować ostrożność","Spokojną żeglugę"],"c":1},{"q":"Co oznacza spokojna tafla wody przy wysokiej wilgotności powietrza?","a":["Zbliżający się front","Możliwość wystąpienia mgły radiacyjnej","Wysokie ciśnienie"],"c":1},{"q":"Co zrobić, gdy nadciąga mgła z przeciwnego brzegu?","a":["Zmniejszyć prędkość, włączyć sygnały dźwiękowe i światła pozycyjne","Przyspieszyć, by ją opuścić","Wpłynąć w nią bez zmian"],"c":0},{"q":"Jak rozpoznać zbliżanie się niżu?","a":["Wzrost ciśnienia i bezchmurne niebo","Słabnący wiatr","Spadek ciśnienia, rosnąca wilgotność i zachmurzenie"],"c":2},{"q":"Jakie warunki meteorologiczne są najbardziej niebezpieczne dla małych łodzi?","a":["Szkwały, burze i silny wiatr z nagłymi zmianami kierunku","Ciepły front","Wysokie ciśnienie i słaby wiatr"],"c":2}],"Ratownictwo i bezpieczeństwo":[{"q":"Co to jest wypadek na wodzie?","a":["Manewr kotwiczenia","Nieprawidłowe cumowanie","Nagłe zdarzenie zagrażające życiu lub zdrowiu ludzi na wodzie"],"c":2},{"q":"Co należy zrobić jako pierwsze po zauważeniu człowieka za burtą?","a":["Rzucić mu środek ratunkowy i utrzymywać z nim kontakt wzrokowy","Włączyć silnik i płynąć w jego kierunku","Odpłynąć, by nie przeszkadzać"],"c":0},{"q":"Jak oznacza się sytuację „człowiek za burtą”?","a":["Krzykiem „woda!”","Krzykiem „człowiek za burtą!” i wskazaniem ręką kierunku","Uderzeniem w burtę"],"c":1},{"q":"Jaką boję należy rzucić osobie za burtą?","a":["Tylko cumowniczą","Koło ratunkowe z liną lub pławką świetlną","Boję kotwiczną"],"c":1},{"q":"Co należy zrobić po podjęciu człowieka z wody?","a":["Sprawdzić oddech, ogrzać i w razie potrzeby rozpocząć resuscytację","Podać wodę do picia","Kazać mu pływać dla rozgrzewki"],"c":0},{"q":"Co to jest koło ratunkowe?","a":["Środek ratunkowy utrzymujący człowieka na powierzchni wody","Element cumowniczy","Znak ostrzegawczy"],"c":0},{"q":"Co to jest kamizelka asekuracyjna?","a":["Środek wypornościowy wspomagający utrzymanie się na wodzie","Ubranie wodoodporne","Kamizelka ochronna"],"c":0},{"q":"Czym różni się kamizelka ratunkowa od asekuracyjnej?","a":["Ma mniejszą wyporność","Jest do pływania sportowego","Kamizelka ratunkowa samoczynnie utrzymuje głowę nad wodą nawet przy utracie przytomności"],"c":2},{"q":"Co oznacza skrót SOLAS?","a":["Międzynarodowa konwencja o bezpieczeństwie życia na morzu (Safety of Life at Sea)","Służba Ochrony Ludzi na Akwenie Słodkowodnym","System Ostrzegania Lokalnego"],"c":0},{"q":"Co oznacza czerwona flara na wodzie?","a":["Sygnał wzywania pomocy","Oznaczenie granicy akwenu","Znak ostrzegawczy"],"c":0},{"q":"Co oznacza pomarańczowy dym na wodzie?","a":["Zakaz żeglugi","Sygnał wzywania pomocy w dzień","Znak ostrzegawczy o sieciach"],"c":1},{"q":"Co oznacza wznoszenie i opuszczanie ramion na przemian?","a":["Sygnał wzywania pomocy","Pozdrowienie z innej łodzi","Manewr startu"],"c":0},{"q":"Co należy zrobić po zauważeniu pożaru na pokładzie?","a":["Schować się w kabinie","Odpłynąć od brzegu","Zatrzymać silnik, odciąć dopływ paliwa i użyć gaśnicy"],"c":2},{"q":"Jakie gaśnice stosuje się na jednostkach motorowych?","a":["Wodne","Proszkowe","Pianowe"],"c":1},{"q":"Gdzie należy trzymać gaśnicę na łodzi?","a":["W miejscu łatwo dostępnym, blisko stanowiska sternika","W baku na rufie","Pod silnikiem"],"c":0},{"q":"Co należy zrobić po przypadkowym rozlaniu paliwa na pokładzie?","a":["Natychmiast przewietrzyć jednostkę i nie uruchamiać silnika","Przemyć wodą","Zapalić silnik, by „spalić opary”"],"c":0},{"q":"Co oznacza znak „niebezpieczeństwo wybuchu”?","a":["Ostrzeżenie o obecności paliwa lub oparów łatwopalnych","Zakaz cumowania","Znak ratunkowy"],"c":0},{"q":"Jak rozpoznać zatrucie tlenkiem węgla (CO)?","a":["Kaszel i gorączka","Ból głowy, zawroty i senność","Dreszcze"],"c":1},{"q":"Co zrobić w przypadku podejrzenia zatrucia tlenkiem węgla?","a":["Podać wodę","Natychmiast zapewnić dopływ świeżego powietrza i wezwać pomoc","Ogrzać poszkodowanego"],"c":1},{"q":"Co oznacza skrót VHF?","a":["Very High Frequency – radiotelefon morski/śródlądowy","Visual Help Frequency","Vessel Harbor Function"],"c":0},{"q":"Na jakim kanale VHF nadaje się wezwanie MAYDAY?","a":["Kanał 16","Kanał 10","Kanał 6"],"c":0},{"q":"Co oznacza komunikat MAYDAY?","a":["Prośba o pomoc techniczną","Sygnał wzywania pomocy w sytuacji zagrożenia życia","Zgłoszenie rejsu"],"c":1},{"q":"Co oznacza komunikat PAN PAN?","a":["Wezwanie pomocy w sytuacji niegroźnej, ale wymagającej asysty","Alarm pożarowy","Zgłoszenie postoju"],"c":0},{"q":"Co oznacza komunikat SECURITE?","a":["Wezwanie o pomoc","Ostrzeżenie o niebezpieczeństwie nawigacyjnym lub pogodowym","Prośba o cumowanie"],"c":1},{"q":"Co to jest EPIRB?","a":["Radiopławka alarmowa nadająca sygnał wzywania pomocy","Nadajnik pogody","Czujnik ciśnienia"],"c":0},{"q":"Co to jest PLB?","a":["Osobiste urządzenie lokalizacyjne (Personal Locator Beacon)","Gaśnica podręczna","Czujnik dymu"],"c":0},{"q":"Co oznacza skrót AIS?","a":["Automatic Identification System – system identyfikacji statków","Alarm Isolated System","System ratownictwa lądowego"],"c":0},{"q":"Co należy zrobić po otrzymaniu komunikatu MAYDAY?","a":["Utrzymać ciszę radiową i zanotować dane jednostki wzywającej pomocy","Nadać własny sygnał","Zmienić kanał"],"c":0},{"q":"Jakie dane należy przekazać w komunikacie MAYDAY?","a":["Nazwę jednostki, pozycję, rodzaj niebezpieczeństwa i liczbę osób na pokładzie","Tylko imię sternika","Kierunek wiatru"],"c":0},{"q":"Co należy zrobić, jeśli łódź zaczyna nabierać wody?","a":["Przyspieszyć","Włączyć pompę zęzową, rozłożyć ciężar i ocenić źródło przecieku","Przechylić łódź"],"c":1},{"q":"Co to jest pompa zęzowa?","a":["Urządzenie do napełniania zbiorników","Urządzenie do usuwania wody z dna jednostki","Filtr paliwa"],"c":1},{"q":"Co oznacza kolor pomarańczowy w oznaczeniach ratowniczych?","a":["Kolor sygnałów wzywania pomocy i wyposażenia ratunkowego","Kolor statków rybackich","Kolor cum"],"c":0},{"q":"Co oznacza biała flaga z niebieskim kwadratem pośrodku?","a":["Sygnał „nurek pod wodą” – zachować 50 m odległości","Sygnał „człowiek za burtą”","Znak zakazu kotwiczenia"],"c":0},{"q":"Jak należy przechowywać kamizelki ratunkowe?","a":["W zamkniętej bakiscie pod pokładem","W miejscu łatwo dostępnym dla każdego członka załogi","W skrzyni narzędziowej"],"c":1},{"q":"Co to jest hipotermia?","a":["Przegrzanie organizmu","Spadek temperatury ciała poniżej normy (","Skurcz mięśni po wysiłku"],"c":1},{"q":"Jakie są pierwsze objawy hipotermii?","a":["Gorączka","Dreszcze, spowolnienie mowy, senność","Sucha skóra"],"c":1},{"q":"Co należy zrobić przy podejrzeniu hipotermii?","a":["Zdjąć mokre ubranie, ogrzać poszkodowanego, podać ciepły napój (jeśli przytomny)","Pocierać ciało śniegiem","Wskoczyć do wody, by się „rozgrzać”"],"c":0},{"q":"Co należy zrobić, jeśli osoba jest nieprzytomna, ale oddycha?","a":["Ułożyć ją w pozycji bocznej ustalonej i obserwować oddech","Zostawić w pozycji pionowej","Ułożyć na brzuchu"],"c":0},{"q":"Jak często wykonuje się oddechy ratownicze podczas RKO?","a":["Co 5 uciśnięć","2 oddechy po każdych 30 uciśnięciach","5 oddechów po 15 uciśnięciach"],"c":1},{"q":"Gdzie uciska się klatkę piersiową przy resuscytacji?","a":["W dolnej części brzucha","W dolnej połowie mostka","Na lewym boku klatki"],"c":1},{"q":"Jaką głębokość powinny mieć uciśnięcia klatki piersiowej u dorosłych?","a":["5–6 cm","2–3 cm","8–10 cm"],"c":0},{"q":"Z jaką częstotliwością wykonuje się uciśnięcia klatki piersiowej?","a":["30/min","60/min","100–120/min"],"c":2},{"q":"Jak należy postąpić, gdy poszkodowany nie oddycha i nie ma tętna?","a":["Wezwać pomoc i Rozpocząć RKO","Położyć go w cieniu","Poczekać, aż sam zacznie oddychać"],"c":0},{"q":"Co oznacza skrót AED?","a":["Automatyczny Echosonar Dozorowy","Automatyczny defibrylator zewnętrzny","Alarm Elektronicznego Dyżuru"],"c":1},{"q":"Kiedy można użyć AED?","a":["Gdy poszkodowany nie reaguje i nie oddycha","Zawsze, gdy jest przytomny","Tylko w szpitalu"],"c":0},{"q":"Co należy zrobić przed przyklejeniem elektrod AED?","a":["Polać klatkę wodą","Osuszyć i odsłonić klatkę piersiową","Pomasować klatkę"],"c":1},{"q":"Co zrobić po włączeniu AED?","a":["Wykonywać uciśnięcia bez przerwy","Postępować zgodnie z poleceniami głosowymi urządzenia","Samodzielnie oceniać rytm serca"],"c":1},{"q":"Co należy zrobić po wypadku motorówki z obrażeniami załogi?","a":["Zabezpieczyć miejsce zdarzenia, udzielić pomocy i powiadomić służby ratunkowe","Odpłynąć, by nie utrudniać ruchu","Wyłączyć radio"],"c":0},{"q":"Jakie informacje należy podać, wzywając pomoc?","a":["Miejsce, rodzaj wypadku, liczbę poszkodowanych i stan zagrożenia","Tylko imię sternika","Tylko nazwę akwenu"],"c":0},{"q":"Jakie numery alarmowe obowiązują w Polsce?","a":["112","911","119"],"c":0},{"q":"Kto dowodzi akcją ratunkową na miejscu wypadku wodnego?","a":["Największy statek","Pierwszy, który podjął ratowanie – do czasu przybycia służb","Dowolna osoba"],"c":1},{"q":"Jakie są obowiązki sternika po wypadku?","a":["Udzielić pomocy, wezwać służby, nie opuszczać miejsca zdarzenia","Odnotować czas i odpłynąć","Przekazać winę innej jednostce"],"c":0},{"q":"Co należy zrobić, gdy silnik przestaje działać na środku jeziora?","a":["Skoczyć do wody","Użyć wiosła lub kotwicy, by ustabilizować pozycję i ocenić sytuację","Zostawić ster i czekać"],"c":1},{"q":"Jak uniknąć pożaru na jednostce motorowej?","a":["Regularnie wietrzyć komorę silnika i kontrolować układ paliwowy","Trzymać paliwo w kabinie","Tankować przy włączonym silniku"],"c":0},{"q":"Co zrobić w razie pożaru paliwa w komorze silnika?","a":["Odciąć dopływ paliwa, nie otwierać komory i użyć gaśnicy przez otwór rewizyjny","Otworzyć klapę i wlać wodę","Opuścić łódź"],"c":0},{"q":"Jak postępować przy pożarze odzieży na człowieku?","a":["Polewać wodą z wiadra","Przykryć kocem gaśniczym lub odzieżą, by odciąć dopływ tlenu","Pozostawić, aż zgaśnie samoczynnie"],"c":1},{"q":"Co oznacza dźwięk dzwonu lub syreny w porcie trwający ponad minutę?","a":["Alarm pożarowy lub ewakuacyjny","Sygnalizacja cumowania","Wezwanie do tankowania"],"c":0},{"q":"Jakie są najczęstsze przyczyny zatonięcia małej jednostki?","a":["Przeciążenie, zła dystrybucja ładunku, gwałtowne manewry","Zbyt duża prędkość","Czyszczenie kadłuba"],"c":0},{"q":"Co zrobić, gdy łódź przewróci się do góry dnem, ale nie tonie?","a":["Pozostać przy kadłubie – łatwiej cię zauważyć","Odpłynąć w stronę brzegu","Próbować wejść pod spód"],"c":0},{"q":"Co oznacza skrót SAR?","a":["Search and Rescue – służba ratownictwa morskiego i wodnego","System Alarmowy Radiowy","Safety and Regulations"],"c":0},{"q":"Co oznacza skrót WOPR?","a":["Wodne Ochotnicze Pogotowie Ratunkowe","Wojskowe Oddziały Patrolowo-Ratownicze","Wydział Obsługi Portów Rzecznych"],"c":0},{"q":"Co zrobić, gdy w porcie słychać alarm pożarowy?","a":["Opuścić pomost, powiadomić służby i nie blokować dojazdu straży","Stać przy łodzi","Odpłynąć środkiem toru"],"c":0},{"q":"Jakie są podstawowe środki ratunkowe na jednostce motorowej?","a":["Kamizelki ratunkowe, koło ratunkowe, gaśnica, apteczka","Lina cumownicza","Koc i termos"],"c":0},{"q":"Jakie środki należy mieć na łodzi do komunikacji?","a":["Radiotelefon lub telefon komórkowy","Papierowa mapa","Gwizdek"],"c":0},{"q":"Co oznacza skrót DSC?","a":["Digital Selective Calling – system cyfrowego wywołania alarmowego","Data Safety Channel","Digital Signal Check"],"c":0},{"q":"Jakie są zasady korzystania z gaśnicy proszkowej?","a":["Usunąć zawleczkę, skierować dyszę na źródło ognia, nacisnąć dźwignię","Otworzyć zawór i potrząsać","Lać proszek po całym pokładzie"],"c":0},{"q":"Co należy zrobić po ugaszeniu pożaru?","a":["Sprawdzić miejsce pod kątem ponownego zapłonu i przewietrzyć wnętrze","Odpłynąć natychmiast","Włączyć silnik"],"c":0},{"q":"Jakie objawy wskazują na porażenie prądem?","a":["Brak przytomności, sztywność mięśni, oparzenia w punktach kontaktu","Wysoka temperatura ciała","Drżenie rąk po wysiłku"],"c":0},{"q":"Co zrobić przy porażeniu prądem na łodzi?","a":["Odłączyć źródło zasilania","Oblać wodą","Dotknąć poszkodowanego gołą ręką"],"c":0},{"q":"Co należy zrobić po znalezieniu zwłok w wodzie?","a":["Zgłosić natychmiast policji lub służbom ratowniczym","Wyciągnąć i przewieźć do brzegu samodzielnie","Zignorować"],"c":0},{"q":"Jakie jest pierwsze działanie w razie wypadku na wodzie?","a":["Zapewnienie bezpieczeństwa sobie i poszkodowanym","Dzwonienie po znajomych","Odpalenie flary"],"c":0},{"q":"Co to jest dryfkotwa?","a":["Urządzenie ograniczające dryf i stabilizujące jednostkę na fali","Boja cumownicza","Pływak ratunkowy"],"c":0},{"q":"Co zrobić, gdy ster przestaje działać?","a":["Zmniejszyć prędkość i próbować sterować silnikiem lub wiosłem","Przyspieszyć","Wskoczyć do wody"],"c":0},{"q":"Jakie wyposażenie obowiązkowo musi być na łodzi motorowej na śródlądziu?","a":["Kamizelki ratunkowe, gaśnica, środek do usuwania wody, lina cumownicza","Tylko radio","Boja kotwiczna"],"c":0},{"q":"Co oznacza żółta flara?","a":["Sygnał alarmowy lub oznaczenie robót podwodnych","Sygnał „stop”","Znak graniczny"],"c":0},{"q":"Co oznacza błysk białego światła z brzegu?","a":["Może oznaczać wezwanie pomocy – należy obserwować i potwierdzić sygnał","Znak cumowania","Oświetlenie pomostu"],"c":0},{"q":"Co zrobić, gdy ktoś wypadnie za burtę i zniknie z pola widzenia?","a":["Zaznaczyć miejsce, zawrócić, prowadzić poszukiwania w sektorach","Kontynuować rejs","Włączyć autopilota"],"c":0},{"q":"Co to jest rzutka ratownicza?","a":["Lina z obciążeniem służąca do podania tonącemu","Kotwica ręczna","Lina cumownicza"],"c":0},{"q":"Jak używać rzutki ratowniczej?","a":["Rzucać za osobę w wodzie tak, by lina trafiła przed nią","Celować w głowę","Rzucić pionowo w górę"],"c":0},{"q":"Co należy zrobić po użyciu środków ratunkowych?","a":["Sprawdzić ich stan techniczny i uzupełnić brakujące elementy","Schować i zapomnieć","Oddać do utylizacji"],"c":0},{"q":"Jak postępować, gdy sternik straci przytomność?","a":["Zatrzymać jednostkę, wezwać pomoc, udzielić pierwszej pomocy","Włączyć autopilota","Przewrócić go na bok i kontynuować rejs"],"c":0},{"q":"Jakie działanie jest najważniejsze przy pożarze?","a":["Zachować spokój i odciąć dopływ paliwa oraz powietrza","Otworzyć klapy, by przewietrzyć","Skakać do wody"],"c":0},{"q":"Co oznacza dym niebieski?","a":["Sygnał ćwiczebny – nie należy reagować alarmowo","Wezwanie pomocy","Pożar paliwa"],"c":0},{"q":"Jakie zachowanie na wodzie jest obowiązkowe po zauważeniu wypadku?","a":["Udzielenie pomocy w miarę możliwości bez narażania siebie","Zgłoszenie po powrocie do portu","Brak obowiązku"],"c":0},{"q":"Co zrobić, gdy na pokładzie ktoś doznaje oparzenia?","a":["Schłodzić miejsce chłodną wodą i zabezpieczyć opatrunkiem","Posmarować tłuszczem","Posypać solą"],"c":0},{"q":"Jakie objawy świadczą o udarze cieplnym?","a":["Gorąca, czerwona skóra, zawroty głowy, utrata przytomności","Dreszcze i bladość","Sine wargi"],"c":0},{"q":"Co zrobić przy podejrzeniu udaru cieplnego?","a":["Przenieść w cień, schładzać ciało, wezwać pomoc","Położyć na słońcu","Podawać gorące napoje"],"c":0},{"q":"Co należy zrobić przy zachłyśnięciu wodą?","a":["Odwrócić poszkodowanego głową w dół i usunąć wodę z dróg oddechowych","Położyć na wznak","Ucisnąć brzuch"],"c":0},{"q":"Co to jest sygnał radiowy „MAYDAY RELAY”?","a":["Przekazanie wezwania MAYDAY w imieniu innej jednostki","Zgłoszenie pozycji","Prośba o pogodę"],"c":0},{"q":"Jak oznacza się jednostkę wzywającą pomocy w nocy?","a":["Światło czerwone przerywane, flary lub błyski białe","Światło zielone","Brak światła"],"c":0},{"q":"Co należy zrobić po zakończeniu akcji ratunkowej?","a":["Sprawdzić stan załogi, sprzętu i zgłosić zdarzenie odpowiednim służbom","Od razu kontynuować rejs","Wyrzucić zużyty sprzęt"],"c":0},{"q":"Co należy zrobić, jeśli na pokładzie zabraknie środków ratunkowych?","a":["Natychmiast przerwać rejs i uzupełnić wyposażenie","Zgłosić to po powrocie","Płynąć wolniej"],"c":0},{"q":"Co zrobić, gdy paliwo rozleje się do wody?","a":["Zabezpieczyć miejsce, nie używać ognia i zgłosić służbom portowym lub WOPR","Rozcieńczyć wodą","Spalić powierzchnię"],"c":0},{"q":"Jak często należy kontrolować stan kamizelek ratunkowych?","a":["Przed każdym rejsem","Raz w sezonie","Tylko po użyciu"],"c":0},{"q":"Co to jest „lista kontrolna bezpieczeństwa”?","a":["Dokument portowy","Zbiór czynności do wykonania przed rejsem w celu sprawdzenia bezpieczeństwa","Formularz ubezpieczeniowy"],"c":1},{"q":"Co należy zrobić w razie braku łączności radiowej w sytuacji awaryjnej?","a":["Nadać sygnały świetlne, dymne lub dźwiękowe","Włączyć autopilota","Wypłynąć dalej"],"c":0},{"q":"Jak zapobiegać kolizjom z pływakami i kajakarzami?","a":["Zachować odpowiedni dystans i ograniczyć prędkość w ich pobliżu","Utrzymywać stały kurs","Trąbić"],"c":0},{"q":"Co oznacza, że łódź „nabrała przechyłu”?","a":["Pochylenie kadłuba na jedną burtę, często z powodu nierównomiernego obciążenia","Usterkę silnika","Pęknięcie pokładu"],"c":0},{"q":"Jakie warunki sprzyjają przewróceniu łodzi motorowej?","a":["Zbyt duża prędkość na fali, przeciążenie i gwałtowne manewry","Długi postój w porcie","Brak załogi"],"c":0},{"q":"Co zrobić po zderzeniu z inną jednostką?","a":["Sprawdzić stan załogi, zabezpieczyć jednostkę i wymienić dane z drugim sternikiem","Odpłynąć od razu","Zgłosić po tygodniu"],"c":0},{"q":"Kiedy można opuścić jednostkę tonącą?","a":["Tylko w ostateczności, gdy pozostanie na pokładzie zagraża życiu","Gdy silnik nie działa","Gdy skończy się paliwo"],"c":0},{"q":"Co oznacza termin „ewakuacja kontrolowana”?","a":["Zaplanowane opuszczenie jednostki w sposób uporządkowany i bez paniki","Skakanie do wody w dowolnym momencie","Awaryjne cumowanie"],"c":0},{"q":"Co należy zabrać przy ewakuacji z łodzi?","a":["Kamizelkę ratunkową, środki łączności, sygnały wzywania pomocy","Walizkę z ubraniami","Kotwicę"],"c":0},{"q":"Jakie są zasady użycia flar sygnałowych?","a":["Używać tylko w sytuacji rzeczywistego zagrożenia, trzymając z dala od twarzy i paliwa","Używać przy każdym postoju","Odpalać w kabinie"],"c":0},{"q":"Co oznacza biała flara?","a":["Oznaczenie jednostki rybackiej","Sygnał informacyjny lub oświetlający (nie alarmowy)","Zakaz ruchu"],"c":1},{"q":"Jakie czynniki zwiększają ryzyko pożaru na jednostce motorowej?","a":["Wyciek paliwa, słaba wentylacja i iskry z instalacji elektrycznej","Otwarte okna","Zimna pogoda"],"c":0},{"q":"Jakie działanie należy podjąć po znalezieniu pustej dryfującej łodzi?","a":["Zgłosić natychmiast służbom ratowniczym i przekazać pozycję","Holować ją do brzegu bez zgłoszenia","Zignorować"],"c":0},{"q":"Jakie czynności należy wykonać po zakończeniu akcji gaszenia pożaru?","a":["Sprawdzić miejsce pożaru, przewietrzyć, ocenić stan paliwa i instalacji","Odpalić silnik dla próby","Zostawić jak jest"],"c":0},{"q":"Co to jest „raport powypadkowy”?","a":["Dokument opisujący przebieg zdarzenia i podjęte działania","Rejestr paliwa","Lista załogi"],"c":0},{"q":"Kto w Polsce prowadzi akcje ratownicze na wodach śródlądowych?","a":["Wodne Ochotnicze Pogotowie Ratunkowe (WOPR)","Służba Celna","Straż Leśna"],"c":0}],"Etykieta i ochrona środowiska":[{"q":"Co oznacza pojęcie „etykieta wodniacka”?","a":["Zasady kulturalnego i bezpiecznego zachowania na wodzie i w portach","Regulamin przystani","Plan ćwiczeń ratowniczych"],"c":0},{"q":"Jak należy zachować się w porcie wobec innych załóg?","a":["Udawać, że nikogo się nie widzi","Pomóc przy cumowaniu i zachować ciszę nocną","Zająć najlepsze miejsce przy kei"],"c":1},{"q":"Jakie zachowanie świadczy o kulturze wodniaka?","a":["Pływanie na pełnych obrotach w porcie","Pomoc innym i unikanie hałasu","Ignorowanie przepisów"],"c":1},{"q":"Co zrobić, gdy inna jednostka prosi o pomoc?","a":["Udzielić pomocy w miarę możliwości bez narażania siebie","Zignorować wezwanie","Nagrać filmik"],"c":0},{"q":"Co należy zrobić przy tankowaniu łodzi?","a":["Wyłączyć silnik, nie palić, nie używać otwartego ognia","Rozmawiać przez telefon","Tankować z pracującym silnikiem"],"c":0},{"q":"Co zrobić w przypadku rozlania paliwa do wody?","a":["Natychmiast zgłosić to obsłudze portu lub służbom","Rozcieńczyć wodą","Przykryć ręcznikiem"],"c":0},{"q":"Jakie odpady należy zabierać z łodzi?","a":["Wszystkie odpady, również paliwa i ścieki","Tylko plastik","Tylko żywność"],"c":0},{"q":"Co oznacza strefa ciszy?","a":["Zakaz używania silników spalinowych","Zakaz rozmów","Zakaz żeglugi nocą"],"c":0},{"q":"Jak należy zachować się przy mijaniu kajaków?","a":["Zmniejszyć prędkość i zachować bezpieczny odstęp","Zatrąbić","Wytworzyć większą falę"],"c":0},{"q":"Jak należy zachować się podczas kąpieli osób w pobliżu łodzi?","a":["Wpłynąć blisko, by ostrzec","Oddalić się i zmniejszyć prędkość","Ignorować"],"c":1},{"q":"Co oznacza „strefa ochrony ujęcia wody”?","a":["Obszar, gdzie obowiązuje zakaz żeglugi i kąpieli","Port handlowy","Punkt tankowania"],"c":0},{"q":"Co oznacza „no discharge zone”?","a":["Zakaz żeglugi","Zakaz zrzutu ścieków i paliw do wody","Zakaz tankowania"],"c":1},{"q":"Co oznacza pojęcie „czarna woda”?","a":["Brudny deszcz","Ścieki z toalet pokładowych","Zanieczyszczone paliwo"],"c":1},{"q":"Co oznacza pojęcie „szara woda”?","a":["Woda z pryszniców i zlewów na jednostce","Woda pitna","Paliwo"],"c":0},{"q":"Co należy zrobić z tzw. czarną wodą?","a":["Opróżnić w stacji odbioru ścieków w porcie","Wylać do jeziora","Spuścić podczas rejsu"],"c":0},{"q":"Co należy zrobić ze zużytym olejem silnikowym?","a":["Oddać do punktu zbiórki odpadów niebezpiecznych","Wylać do rzeki","Zakopać na brzegu"],"c":0},{"q":"Co oznacza „zielona marina”?","a":["Marina przyjazna środowisku – z odbiorem ścieków i segregacją odpadów","Marina prywatna","Strefa przemysłowa"],"c":0},{"q":"Co należy zrobić ze starym paliwem po sezonie?","a":["Wylać do kanału","Oddać do utylizacji lub przechować bezpiecznie","Spalić"],"c":1},{"q":"Jakie zachowanie w marinie jest nieetyczne?","a":["Wylewanie ścieków i hałasowanie","Pomoc przy cumowaniu","Sprzątanie pomostu"],"c":0},{"q":"Co oznacza pojęcie „fair play na wodzie”?","a":["Ściganie się bez reguł","Rezygnacja z pomocy","Uczciwe, bezpieczne i kulturalne zachowanie wobec innych"],"c":2},{"q":"Co oznacza „etykieta portowa”?","a":["Tablica z cennikiem","Zasady dobrego zachowania w marinie i przy kei","Zakaz cumowania"],"c":1},{"q":"Co oznacza pojęcie „ślad ekologiczny jednostki”?","a":["Wpływ eksploatacji łodzi na środowisko – spaliny, hałas, odpady","Numer rejestracyjny","Kolor kadłuba"],"c":0},{"q":"Co oznacza pojęcie „dobry sąsiad portowy”?","a":["Sternik, który pomaga innym i nie zakłóca spokoju","Ktoś, kto gra najgłośniej","Właściciel największej łodzi"],"c":0},{"q":"Jakie zachowanie pomaga ograniczyć erozję brzegów?","a":["Utrzymywanie odpowiedniej odległości od brzegu i zmniejszenie prędkości","Cumowanie w trzcinach","Pływanie blisko linii brzegowej"],"c":0},{"q":"Co zrobić, gdy widzisz śmieci na wodzie?","a":["Zebrać je, jeśli to bezpieczne, i wyrzucić w porcie","Płynąć dalej","Zepchnąć w fale"],"c":0},{"q":"Co oznacza pojęcie „cisza nocna” w marinie?","a":["Zakaz cumowania","Zakaz żeglugi","Zakaz głośnych zachowań w określonych godzinach nocnych"],"c":2},{"q":"Co oznacza „ekomarina”?","a":["Port z infrastrukturą ekologiczną do odbioru ścieków i odpadów","Punkt tankowania","Marina prywatna"],"c":0},{"q":"Co oznacza pojęcie „czysta przystań”?","a":["Obiekt, w którym obowiązuje segregacja śmieci i zakaz wylewania paliw","Port wojskowy","Strefa przemysłowa"],"c":0},{"q":"Jakie paliwo jest bardziej ekologiczne?","a":["Olej opałowy","Benzyna bezołowiowa lub paliwo niskosiarkowe","Dowolne tanie paliwo"],"c":1},{"q":"Co oznacza pojęcie „zrównoważony rozwój żeglugi”?","a":["Rezygnacja z pływania","Rekreacja na wodzie z poszanowaniem przyrody","Tylko silniki elektryczne"],"c":1},{"q":"Jakie zachowanie świadczy o braku kultury?","a":["Pomoc przy cumowaniu","Hałas i brak szacunku dla innych załóg","Udzielenie pierwszeństwa"],"c":1},{"q":"  Co oznacza symbol przekreślonej ryby?","a":["Zakaz połowu ryb","Zakaz kąpieli","Zakaz żeglugi"],"c":0},{"q":"  Co oznacza pojęcie „ekożegluga”?","a":["Pływanie w sposób bezpieczny i przyjazny środowisku","Rezygnacja z napędu","Tylko na jeziorach"],"c":0},{"q":"Co należy zrobić, by zmniejszyć zużycie paliwa?","a":["Płynąć stałą prędkością ekonomiczną i utrzymywać czysty kadłub","Pływać z pełnym gazem","Często manewrować"],"c":0},{"q":"Jakie zachowanie jest zakazane w rezerwatach przyrody?","a":["Zakłócanie ciszy i wchodzenie w szuwary łodzią","Fotografowanie z dystansu","Obserwacja ptaków"],"c":0},{"q":"Jakie zachowanie jest nieetyczne wobec przyrody?","a":["Zrzucanie ścieków i śmieci do wody","Korzystanie z ekologicznych środków","Używanie toalet portowych"],"c":0},{"q":"Co oznacza pojęcie „odpowiedzialny sternik”?","a":["Osoba, która zna przepisy","Sternik, który dba o bezpieczeństwo, środowisko i innych ludzi","Każdy właściciel łodzi"],"c":1},{"q":"Co należy zrobić, gdy służby wzywają do zatrzymania jednostki?","a":["Płynąć szybciej","Zmniejszyć prędkość i przygotować dokumenty","Odpłynąć na drugi brzeg"],"c":1},{"q":"Jakie zachowanie pomaga budować dobry wizerunek sternika?","a":["Ignorowanie zasad","Kultura, pomoc i przestrzeganie przepisów","Jazda na fali"],"c":1},{"q":"Co oznacza pojęcie „cisza wodniacka”?","a":["Ograniczenie hałasu i prędkości na akwenach rekreacyjnych","Zakaz żeglugi nocnej","Zakaz rozmów"],"c":0},{"q":"Co należy zrobić, widząc ścieki wypływające z innej jednostki?","a":["Zgłosić to policji wodnej lub obsłudze portu","Zignorować","Zrobić zdjęcie do internetu"],"c":0},{"q":"Co oznacza pojęcie „dobry ton na wodzie”?","a":["Głośna muzyka","Kulturalne zachowanie i poszanowanie zasad","Umiejętność cumowania"],"c":1},{"q":"Co oznacza określenie „ekoport”?","a":["Miejsce wyposażone w urządzenia do odbioru ścieków i odpadów","Punkt gastronomiczny","Port handlowy"],"c":0},{"q":"Jakie zachowanie jest zabronione w marinie?","a":["Mycie łodzi biodegradowalnymi środkami","Wylewanie paliwa i głośne imprezy","Rozmowy na kei"],"c":1},{"q":"Co oznacza pojęcie „zielona flota”?","a":["Jednostki niskoemisyjne, ekologiczne","Flota wojskowa","Port rybacki"],"c":0},{"q":"Co oznacza pojęcie „czysta jednostka”?","a":["Łódź utrzymana w dobrym stanie technicznym, nie zanieczyszczająca wody","Nowa jednostka","Łódź bez załogi"],"c":0},{"q":"Jakie zachowanie świadczy o odpowiedzialnym sterniku?","a":["Pomoc innym i przestrzeganie zasad ochrony środowiska","Pływanie z maksymalną prędkością","Używanie syreny do zabawy"],"c":0},{"q":"Co oznacza symbol przekreślonego ogniska?","a":["Zakaz rozpalania ognisk na brzegu","Zakaz biwakowania","Zakaz kąpieli"],"c":0},{"q":"Jakie zachowanie wobec ratowników WOPR jest właściwe?","a":["Wykonywać polecenia i nie przeszkadzać w działaniach","Dyskutować","Odpłynąć"],"c":0},{"q":"Co oznacza pojęcie „czysta woda to bezpieczna woda”?","a":["Brak zanieczyszczeń zwiększa bezpieczeństwo kąpiących i żeglarzy","Hasło reklamowe","Obowiązek mycia łodzi"],"c":0},{"q":"Co należy zrobić, by uniknąć skażenia środowiska paliwem?","a":["Sprawdzać stan zbiornika i używać lejków z filtrem","Tankować przy burcie","Dolewać w ruchu"],"c":0},{"q":"Co oznacza pojęcie „dobre sąsiedztwo na wodzie”?","a":["Unikanie wszystkich","Wzajemny szacunek, pomoc i ostrożność","Brak komunikacji"],"c":1},{"q":"Co oznacza pojęcie „etyczny sternik”?","a":["Osoba, która przestrzega zasad bezpieczeństwa, kultury i ekologii","Właściciel drogiej łodzi","Ktoś, kto szybko pływa"],"c":0},{"q":"Co należy zrobić z odpadami z łodzi?","a":["Posegregować i oddać w punkcie odbioru w marinie","Zostawić na brzegu","Wyrzucić do wody"],"c":0},{"q":"Co oznacza pojęcie „kultura techniczna”?","a":["Dbałość o stan techniczny łodzi i sprzętu","Regulamin portu","Zasady cumowania"],"c":0},{"q":"Co oznacza symbol przekreślonego śmigła?","a":["Zakaz używania silników spalinowych","Zakaz nurkowania","Zakaz żeglugi nocą"],"c":0},{"q":"Co oznacza pojęcie „cisza na wodzie”?","a":["Ograniczenie hałasu i falowania dla komfortu i bezpieczeństwa innych","Zakaz rozmów","Tylko dla żaglówek"],"c":0},{"q":"Jakie zachowanie jest właściwe wobec kąpiących się?","a":["Przepłynąć blisko, by ostrzec","Wytworzyć falę","Oddalić się i zachować ostrożność"],"c":2},{"q":"Co oznacza pojęcie „społeczność wodniacka”?","a":["Ludzie związani z rekreacją wodną, przestrzegający zasad współżycia","Klub sportowy","Ratownicy"],"c":0},{"q":"Jakie zachowanie w porcie buduje dobrą opinię o sterniku?","a":["Głośne imprezy","Pomoc przy cumowaniu i życzliwość wobec innych","Ignorowanie zasad"],"c":1},{"q":"Co oznacza pojęcie „czyste silniki”?","a":["Silniki sprawne technicznie i bez wycieków paliwa lub oleju","Nowe jednostki","Tylko elektryczne"],"c":0},{"q":"Co oznacza pojęcie „świadomość ekologiczna”?","a":["Wiedza i odpowiedzialność za wpływ swoich działań na środowisko","Program szkolenia","Zakaz żeglugi"],"c":0},{"q":"Co oznacza pojęcie „dobry przykład na wodzie”?","a":["Zachowanie zgodne z przepisami i kulturą wodniacką","Używanie sygnałów dźwiękowych","Zajmowanie najlepszych miejsc"],"c":0},{"q":"Co oznacza pojęcie „kultura wypoczynku na wodzie”?","a":["Głośna muzyka","Umiejętność korzystania z akwenu bez przeszkadzania innym","Wyścigi motorówek"],"c":1},{"q":"Co oznacza pojęcie „etyka środowiskowa”?","a":["Postępowanie z szacunkiem wobec przyrody i innych użytkowników wód","Regulamin mariny","Zasady opłat portowych"],"c":0}]};
+
+const SECTION_COLORS = ['#2e86c1','#27ae60','#e67e22','#8e44ad','#16a085'];
+const LETTERS = ['A','B','C','D'];
+
+let quiz = { questions:[], idx:0, correct:0, wrong:[], mode:'feedback', answered:false };
+let sectionStats = {};
+
+// Build section checkboxes
+const grid = document.getElementById('section-grid');
+Object.entries(DATA).forEach(([name, qs], i) => {
+  const label = document.createElement('label');
+  label.className = 'section-checkbox';
+  label.innerHTML = `<input type="checkbox" name="section" value="${name}" checked>
+    <span>${name}<span class="section-count">${qs.length} pytań</span></span>`;
+  grid.appendChild(label);
+});
+
+function startQuiz() {
+  const checked = [...document.querySelectorAll('input[name=section]:checked')].map(el=>el.value);
+  if (!checked.length) { alert('Wybierz co najmniej jeden dział.'); return; }
+  
+  let pool = [];
+  checked.forEach(name => {
+    DATA[name].forEach(q => pool.push({...q, section: name}));
+  });
+
+  const order = document.getElementById('order').value;
+  if (order === 'random') pool = pool.sort(()=>Math.random()-0.5);
+
+  const n = Math.min(parseInt(document.getElementById('num-questions').value) || 20, pool.length);
+  quiz.questions = pool.slice(0, n);
+  quiz.idx = 0; quiz.correct = 0; quiz.wrong = [];
+  quiz.mode = document.getElementById('mode').value;
+  quiz.answered = false;
+
+  sectionStats = {};
+  checked.forEach(s => sectionStats[s] = {total:0, correct:0});
+
+  showScreen('quiz');
+  renderQuestion();
+}
+
+function renderQuestion() {
+  const q = quiz.questions[quiz.idx];
+  const total = quiz.questions.length;
+  quiz.answered = false;
+
+  document.getElementById('q-num').textContent = quiz.idx+1;
+  document.getElementById('q-total').textContent = total;
+  document.getElementById('progress-fill').style.width = ((quiz.idx/total)*100)+'%';
+  document.getElementById('score-badge').textContent = quiz.correct+' / '+quiz.idx;
+  document.getElementById('q-section').textContent = q.section;
+  document.getElementById('q-text').innerHTML = '<span class="question-num">'+(quiz.idx+1)+'.</span>'+escHtml(q.q);
+
+  const answersEl = document.getElementById('answers');
+  answersEl.innerHTML = '';
+  const feedback = document.getElementById('feedback-bar');
+  feedback.style.display = 'none';
+  feedback.className = 'feedback-bar';
+  document.getElementById('btn-next').disabled = true;
+
+  q.a.forEach((ans, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'answer-btn';
+    btn.innerHTML = `<span class="letter">${LETTERS[i]}</span><span>${escHtml(ans)}</span>`;
+    btn.onclick = () => selectAnswer(i, q.c);
+    answersEl.appendChild(btn);
+  });
+}
+
+function selectAnswer(chosen, correct) {
+  if (quiz.answered) return;
+  quiz.answered = true;
+  const q = quiz.questions[quiz.idx];
+
+  const btns = document.querySelectorAll('.answer-btn');
+  btns.forEach((btn, i) => {
+    btn.classList.add('disabled');
+    btn.onclick = null;
+    if (i === correct) btn.classList.add('correct');
+    else if (i === chosen && chosen !== correct) btn.classList.add('wrong');
+  });
+
+  const isCorrect = chosen === correct;
+  if (isCorrect) {
+    quiz.correct++;
+    if (sectionStats[q.section]) sectionStats[q.section].correct++;
+  } else {
+    quiz.wrong.push({q: q.q, yourIdx: chosen, correctIdx: correct, options: q.a, section: q.section});
+  }
+  if (sectionStats[q.section]) sectionStats[q.section].total++;
+
+  document.getElementById('score-badge').textContent = quiz.correct+' / '+(quiz.idx+1);
+
+  if (quiz.mode === 'feedback') {
+    const fb = document.getElementById('feedback-bar');
+    fb.style.display = 'block';
+    if (isCorrect) {
+      fb.className = 'feedback-bar correct';
+      fb.textContent = '✓ Poprawnie!';
+    } else {
+      fb.className = 'feedback-bar wrong';
+      fb.textContent = '✗ Błąd. Prawidłowa odpowiedź: '+LETTERS[correct]+'. '+q.a[correct];
+    }
+  }
+
+  document.getElementById('btn-next').disabled = false;
+}
+
+function nextQuestion() {
+  if (!quiz.answered) return;
+  quiz.idx++;
+  if (quiz.idx >= quiz.questions.length) {
+    showResults();
+  } else {
+    renderQuestion();
+  }
+}
+
+function showResults() {
+  showScreen('results');
+  const total = quiz.questions.length;
+  const pct = Math.round((quiz.correct/total)*100);
+  
+  document.getElementById('result-score-big').textContent = pct+'%';
+  document.getElementById('rb-correct').textContent = quiz.correct;
+  document.getElementById('rb-wrong').textContent = quiz.wrong.length;
+  document.getElementById('rb-total').textContent = total;
+
+  let emoji = '😐'; let headline = 'Nieźle!';
+  if (pct >= 90) { emoji = '🏆'; headline = 'Znakomity wynik!'; }
+  else if (pct >= 75) { emoji = '👍'; headline = 'Dobry wynik!'; }
+  else if (pct >= 60) { emoji = '📖'; headline = 'Warto jeszcze powtórzyć.'; }
+  else { emoji = '⚓'; headline = 'Jeszcze trochę nauki przed Tobą.'; }
+  document.getElementById('result-emoji').textContent = emoji;
+  document.getElementById('result-headline').textContent = headline;
+
+  // Section breakdown
+  const srEl = document.getElementById('section-results');
+  srEl.innerHTML = '';
+  let hasStats = Object.values(sectionStats).some(s=>s.total>0);
+  if (hasStats) {
+    const h = document.createElement('h3');
+    h.style.cssText = 'font-size:.95rem;color:var(--navy);margin-bottom:10px;';
+    h.textContent = 'Wyniki wg działów';
+    srEl.appendChild(h);
+    Object.entries(sectionStats).filter(([,s])=>s.total>0).forEach(([name,s], i) => {
+      const p = s.total ? Math.round((s.correct/s.total)*100) : 0;
+      const color = p>=75 ? 'var(--green)' : p>=50 ? 'var(--yellow)' : 'var(--coral)';
+      const row = document.createElement('div');
+      row.className = 'section-result-row';
+      row.innerHTML = `<span class="sr-name">${name}</span>
+        <div class="sr-bar-wrap"><div class="sr-bar" style="width:${p}%;background:${color}"></div></div>
+        <span class="sr-pct" style="color:${color}">${p}%</span>
+        <span style="font-size:.78rem;color:var(--muted)">${s.correct}/${s.total}</span>`;
+      srEl.appendChild(row);
+    });
+  }
+
+  // Wrong answers review
+  const wrEl = document.getElementById('wrong-review');
+  wrEl.innerHTML = '';
+  if (quiz.wrong.length > 0) {
+    const h = document.createElement('h3');
+    h.textContent = '❌ Błędne odpowiedzi ('+quiz.wrong.length+')';
+    wrEl.appendChild(h);
+    quiz.wrong.forEach(item => {
+      const div = document.createElement('div');
+      div.className = 'review-item';
+      div.innerHTML = `<div class="review-q">${escHtml(item.q)}</div>
+        <div class="review-your">Twoja: ${LETTERS[item.yourIdx]}. ${escHtml(item.options[item.yourIdx])}</div>
+        <div class="review-correct">✓ Prawidłowa: ${LETTERS[item.correctIdx]}. ${escHtml(item.options[item.correctIdx])}</div>`;
+      wrEl.appendChild(div);
+    });
+  }
+
+  // Update retry button
+  document.querySelector('.btn-retry').style.display = quiz.wrong.length ? 'block' : 'none';
+}
+
+function retryQuiz() {
+  if (!quiz.wrong.length) return;
+  const wrongQs = quiz.wrong.map(w => ({
+    q: w.q, a: w.options, c: w.correctIdx,
+    section: w.section
+  }));
+  quiz.questions = wrongQs.sort(()=>Math.random()-0.5);
+  quiz.idx = 0; quiz.correct = 0; quiz.wrong = [];
+  sectionStats = {};
+  wrongQs.forEach(q => { if (!sectionStats[q.section]) sectionStats[q.section]={total:0,correct:0}; });
+  showScreen('quiz');
+  renderQuestion();
+}
+
+function goSetup() { showScreen('setup'); }
+
+function confirmQuit() {
+  if (confirm('Zakończyć test i zobaczyć wyniki?')) showResults();
+}
+
+function showScreen(name) {
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('screen-'+name).classList.add('active');
+  window.scrollTo(0,0);
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+</script>
+</body>
+</html>
